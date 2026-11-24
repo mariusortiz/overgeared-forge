@@ -1,14 +1,19 @@
 extends Control
-## The mine: floor after floor, each one a fight, turn by turn. Basic attacks go by
+## The expedition: stage after stage, each one a fight, turn by turn. Basic attacks go by
 ## themselves when the turn's timer runs out; the player may instead use the weapon's
-## skill or switch weapon. After each floor: go down for more loot, or go back up
+## skill or switch weapon. After each stage: go on for more loot, or go home
 ## and keep it. Beaten, Grid loses the materials he was carrying.
 
 enum { IDLE, INTRO, PLAYER, ENEMIES, BETWEEN, CHOICE, OVER }
 
 const TURN_TIME := 2.5
-const HERO_AT := Vector2(180, 290)
-const ENEMY_Y := 150.0
+const HERO_AT := Vector2(84, 246)
+## Where enemies stand, by how many there are.
+const ENEMY_SPOTS := {
+	1: [Vector2(268, 246)],
+	2: [Vector2(244, 200), Vector2(292, 296)],
+	3: [Vector2(236, 176), Vector2(300, 246), Vector2(240, 316)],
+}
 ## With --auto, the game goes back up below this share of its hit points.
 const AUTO_LEAVE := 0.3
 
@@ -33,8 +38,8 @@ var _new_plan := ""
 var _rng := RandomNumberGenerator.new()
 
 var _field: Node2D
-var _hero: Sprite2D
-var _held: Sprite2D
+var _backdrop: Sprite2D
+var _hero: Actor
 var _title: Label
 var _carried: Label
 var _bars: Control
@@ -56,16 +61,16 @@ func _exit_tree() -> void:
 # --- Entrance --------------------------------------------------------------
 
 func _show_entrance() -> void:
-	var text := "LA MINE\n\nChaque étage est un combat, de plus en plus dur, avec un boss tous les %d étages. Plus tu descends, meilleurs sont les matériaux.\n\nAprès chaque étage, tu peux remonter avec ton butin. Si Grid est battu, le butin porté est perdu." % Catalog.BOSS_EVERY
+	var text := "EXPÉDITION\n\nChaque étape est un combat, de plus en plus dur, avec un boss toutes les %d étapes : le canyon de Kesan, les terres du comte Ashur, le temple de Yatan... Plus tu vas loin, meilleurs sont les matériaux.\n\nAprès chaque étape, tu peux rentrer avec ton butin. Si Grid est battu, le butin porté est perdu." % Catalog.BOSS_EVERY
 	if Save.best_floor > 0:
-		text += "\n\nRecord : étage %d" % Save.best_floor
+		text += "\n\nRecord : étape %d" % Save.best_floor
 	if Save.equipped_items("weapon").is_empty():
 		text += "\n\nAucune arme équipée : Grid se battra avec son marteau de forge."
-	var box := _open_overlay(text, 40.0)
+	var box := _open_overlay(text, 16.0)
 	# The first floor, and the floors right after the last bosses beaten.
 	var floors := Save.start_floors()
 	for level in floors.slice(maxi(0, floors.size() - 3)):
-		var button := UI.button("ENTRER  ·  étage %d" % level)
+		var button := UI.button("PARTIR  ·  étape %d" % level)
 		button.custom_minimum_size.y = 42
 		button.pressed.connect(_begin.bind(level))
 		box.add_child(button)
@@ -95,15 +100,14 @@ func _begin(level: int) -> void:
 	_active = 0
 
 	_field = Node2D.new()
-	_field.draw.connect(_draw_field)
 	add_child(_field)
-	_hero = UI.tile_sprite(Catalog.HERO_TILE, 5.0)
+	_backdrop = Sprite2D.new()
+	_backdrop.centered = false
+	_backdrop.scale = Vector2(2, 2)
+	_field.add_child(_backdrop)
+	_hero = Actor.make(Catalog.HERO_SPRITE, false, 2.0)
 	_hero.position = HERO_AT
 	_field.add_child(_hero)
-	_held = Sprite2D.new()
-	_held.position = HERO_AT + Vector2(46, -14)
-	_held.scale = Vector2(2, 2)
-	_field.add_child(_held)
 
 	_bars = Control.new()
 	_bars.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -139,8 +143,9 @@ func _enter_floor(level: int) -> void:
 	for i in ids.size():
 		var info: Dictionary = Catalog.ENEMIES[ids[i]]
 		var boss: bool = info.get("boss", false)
-		var sprite := UI.tile_sprite(info.tile, 8.0 if boss else 4.0)
-		sprite.position = Vector2(180.0 + (i - (ids.size() - 1) / 2.0) * 104.0, ENEMY_Y - (30.0 if boss else 0.0))
+		var sprite := Actor.make(info.sprite, true, 3.0 if boss else 2.0)
+		sprite.hold(UI.picture(info.weapon), UI.weapon_material("iron", 0))
+		sprite.position = ENEMY_SPOTS[ids.size()][i]
 		_field.add_child(sprite)
 		sprite.modulate.a = 0.0
 		create_tween().tween_property(sprite, "modulate:a", 1.0, 0.3)
@@ -149,7 +154,9 @@ func _enter_floor(level: int) -> void:
 			"attack": info.attack * strength, "weak": info.weak, "sprite": sprite, "boss": boss, "stunned": false,
 		})
 	_target = 0
-	_title.text = "Étage %d" % level + ("  ·  BOSS : %s" % _enemies[0].name if Catalog.is_boss_floor(level) else "")
+	var zone := Catalog.zone(level)
+	_backdrop.texture = load("res://assets/lpc/backdrops/%s.png" % zone.backdrop)
+	_title.text = "Étape %d  ·  %s" % [level, "BOSS : " + _enemies[0].name if Catalog.is_boss_floor(level) else zone.name]
 	_refresh_carried()
 	_refresh_slots()
 	_phase = INTRO
@@ -174,7 +181,6 @@ func _process(delta: float) -> void:
 			if _timer <= 0.0:
 				_after_floor()
 	_bars.queue_redraw()
-	_field.queue_redraw()
 
 
 func _player_turn() -> void:
@@ -206,7 +212,7 @@ func _act(choice: int) -> void:
 	var info: Dictionary = Catalog.PLANS[weapon.plan].skill
 	if skill:
 		weapon.cooldown = info.cooldown
-		UI.float_text(self, info.name, HERO_AT + Vector2(0, -60), UI.GOLD)
+		UI.float_text(self, info.name, HERO_AT + Vector2(0, -70), UI.GOLD)
 		match info.kind:
 			"all":
 				for index in _enemies.size():
@@ -229,9 +235,10 @@ func _act(choice: int) -> void:
 	else:
 		_hit_enemy(_target, weapon, 1.0)
 	Sfx.play("hit", _rng.randf_range(0.9, 1.1))
+	_hero.attack()
 	var lunge := create_tween()
-	lunge.tween_property(_hero, "position:y", HERO_AT.y - 22, 0.08)
-	lunge.tween_property(_hero, "position:y", HERO_AT.y, 0.15)
+	lunge.tween_property(_hero, "position:x", HERO_AT.x + 30, 0.1)
+	lunge.tween_property(_hero, "position:x", HERO_AT.x, 0.2)
 	_refresh_slots()
 	_enemy_turn = 0
 	_phase = ENEMIES
@@ -250,15 +257,16 @@ func _hit_enemy(index: int, weapon: Dictionary, power: float) -> float:
 		damage *= Catalog.WEAK_BONUS
 	damage = minf(damage, enemy.hp)
 	enemy.hp -= damage
-	var sprite: Sprite2D = enemy.sprite
+	var sprite: Actor = enemy.sprite
 	var color: Color = Catalog.ELEMENTS[element].color
-	UI.float_text(self, str(roundi(damage)) + ("!" if weak else ""), sprite.position + Vector2(0, -34), color, UI.BIG if weak else UI.BODY)
+	UI.float_text(self, str(roundi(damage)) + ("!" if weak else ""), sprite.position + Vector2(0, -78), color, UI.BIG if weak else UI.BODY)
 	UI.sparks(_field, sprite.position, color, 8)
 	var flash := sprite.create_tween()
 	flash.tween_property(sprite, "modulate", Color(3, 3, 3), 0.05)
 	flash.tween_property(sprite, "modulate", Color.WHITE, 0.15)
 	if enemy.hp <= 0:
-		flash.tween_property(sprite, "modulate:a", 0.0, 0.25)
+		sprite.fall()
+		flash.tween_property(sprite, "modulate:a", 0.0, 0.3).set_delay(0.45)
 		_drop(enemy)
 	return damage
 
@@ -272,7 +280,7 @@ func _drop(enemy: Dictionary) -> void:
 	for i in count:
 		var found := Catalog.roll_material(tier, _rng)
 		_loot[found] = int(_loot.get(found, 0)) + 1
-		UI.float_text(self, "+1 " + Catalog.MATERIALS[found].short, enemy.sprite.position + Vector2(0, 20 + i * 18), Catalog.MATERIALS[found].light)
+		UI.float_text(self, "+1 " + Catalog.MATERIALS[found].short, enemy.sprite.position + Vector2(-20, -20 + i * 18), Catalog.MATERIALS[found].light)
 	_refresh_carried()
 
 
@@ -284,24 +292,26 @@ func _enemy_attack() -> void:
 		return
 	var enemy: Dictionary = _enemies[_enemy_turn]
 	_enemy_turn += 1
-	var sprite: Sprite2D = enemy.sprite
+	var sprite: Actor = enemy.sprite
 	if enemy.stunned:
 		enemy.stunned = false
-		UI.float_text(self, "Sonné", sprite.position + Vector2(0, -34), UI.DIM)
+		UI.float_text(self, "Sonné", sprite.position + Vector2(0, -78), UI.DIM)
 		_timer = 0.3
 		return
 	var damage: float = enemy.attack * _guard * (1.0 - _block) * _rng.randf_range(0.85, 1.15)
 	_hero_hp = maxf(0.0, _hero_hp - damage)
-	UI.float_text(self, "-" + str(roundi(damage)), HERO_AT + Vector2(0, -44), UI.BAD)
+	UI.float_text(self, "-" + str(roundi(damage)), HERO_AT + Vector2(0, -54), UI.BAD)
 	Sfx.play("hurt", _rng.randf_range(0.9, 1.1))
+	sprite.attack()
 	var home := sprite.position
 	var lunge := sprite.create_tween()
-	lunge.tween_property(sprite, "position:y", home.y + 26, 0.08)
-	lunge.tween_property(sprite, "position:y", home.y, 0.15)
+	lunge.tween_property(sprite, "position:x", home.x - 30, 0.1)
+	lunge.tween_property(sprite, "position:x", home.x, 0.2)
 	var flash := _hero.create_tween()
 	flash.tween_property(_hero, "modulate", Color(2.5, 0.6, 0.6), 0.05)
 	flash.tween_property(_hero, "modulate", Color.WHITE, 0.2)
 	if _hero_hp <= 0:
+		_hero.fall()
 		_finish(false)
 	else:
 		_timer = 0.45
@@ -322,12 +332,12 @@ func _after_floor() -> void:
 	Sfx.play("plan" if _new_plan != "" else "loot")
 
 	var next := _floor + 1
-	var text := "Étage %d nettoyé" % _floor
+	var text := "Étape %d terminée" % _floor
 	if _new_plan != "":
 		text += "\nNouveau plan : %s !" % Catalog.PLANS[_new_plan].name
 	text += "\n\nButin porté : %s" % _loot_text(_loot)
 	text += "\nVie : %d / %d" % [roundi(_hero_hp), roundi(_hero_max)]
-	text += "\n\nDescendre à l'étage %d%s avec :" % [next, " (boss)" if Catalog.is_boss_floor(next) else ""]
+	text += "\n\nContinuer vers l'étape %d%s avec :" % [next, " (boss)" if Catalog.is_boss_floor(next) else ""]
 	var box := _open_overlay(text, 24.0)
 	for bonus in Catalog.BONUSES:
 		var button := UI.button("%s  ·  %s" % [bonus.name, bonus.text], UI.SMALL)
@@ -335,7 +345,7 @@ func _after_floor() -> void:
 		button.pressed.connect(_go_down.bind(bonus.id))
 		box.add_child(button)
 	box.add_child(UI.centered("ou", UI.SMALL, UI.DIM))
-	var leave := UI.button("REMONTER avec le butin")
+	var leave := UI.button("RENTRER avec le butin")
 	leave.custom_minimum_size.y = 42
 	leave.add_theme_color_override("font_color", UI.GOLD)
 	leave.pressed.connect(_finish.bind(true))
@@ -374,16 +384,16 @@ func _finish(safe: bool) -> void:
 		for id in _loot:
 			Save.add_material(id, _loot[id])
 		Sfx.play("leave")
-		text = "RETOUR À LA FORGE\n\nButin rapporté : %s\n\nÉtage atteint : %d  ·  record : %d" % [_loot_text(_loot), cleared, Save.best_floor]
+		text = "RETOUR À LA FORGE\n\nButin rapporté : %s\n\nÉtape atteinte : %d  ·  record : %d" % [_loot_text(_loot), cleared, Save.best_floor]
 	else:
 		Sfx.play("defeat")
-		text = "GRID EST BATTU\n\nButin perdu : %s\n\nLes plans trouvés et le record (étage %d) sont gardés." % [_loot_text(_loot), Save.best_floor]
+		text = "GRID EST BATTU\n\nButin perdu : %s\n\nLes plans trouvés et le record (étape %d) sont gardés." % [_loot_text(_loot), Save.best_floor]
 	var box := _open_overlay(text, 110.0)
 	var forge := UI.button("ALLER À LA FORGE")
 	forge.custom_minimum_size.y = 42
 	forge.pressed.connect(func(): main.open("forge"))
 	box.add_child(forge)
-	var again := UI.button("REDESCENDRE")
+	var again := UI.button("REPARTIR")
 	again.custom_minimum_size.y = 42
 	again.pressed.connect(func(): main.open("combat"))
 	box.add_child(again)
@@ -422,27 +432,13 @@ func _best_auto_choice() -> int:
 
 
 func _slot_icon(weapon: Dictionary) -> TextureRect:
-	if weapon.get("bare", false):
-		var icon := TextureRect.new()
-		icon.texture = UI.tile_texture(117)
-		icon.custom_minimum_size = Vector2(64, 64)
-		icon.stretch_mode = TextureRect.STRETCH_SCALE
-		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		return icon
 	return UI.weapon_icon(weapon.plan, weapon.material, weapon.rarity, 2)
 
 
 func _refresh_slots() -> void:
 	UI.clear(_slot_row)
 	var held: Dictionary = _slots[_active]
-	if held.get("bare", false):
-		_held.texture = UI.tile_texture(117)
-		_held.material = null
-		_held.scale = Vector2(3, 3)
-	else:
-		_held.texture = UI.weapon_texture(held.plan)
-		_held.material = UI.weapon_material(held.material, held.rarity)
-		_held.scale = Vector2(2, 2)
+	_hero.hold(UI.weapon_texture(held.plan), UI.weapon_material(held.material, held.rarity))
 	for index in _slots.size():
 		var weapon: Dictionary = _slots[index]
 		var skill: Dictionary = Catalog.PLANS[weapon.plan].skill
@@ -476,27 +472,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	var at: Vector2 = get_local_mouse_position()
 	for index in _enemies.size():
-		if _enemies[index].hp > 0 and at.distance_to(_enemies[index].sprite.position) < 48.0:
+		if _enemies[index].hp > 0 and at.distance_to(_enemies[index].sprite.position) < 52.0:
 			_target = index
-
-
-func _draw_field() -> void:
-	var wall := UI.tile_texture(40)
-	var ground := UI.tile_texture(0)
-	# The deeper, the colder the light.
-	var depth := clampf(_floor / 30.0, 0.0, 1.0)
-	var wall_tint := Color(0.3, 0.28, 0.42).lerp(Color(0.16, 0.24, 0.4), depth)
-	var ground_tint := Color(0.42, 0.36, 0.44).lerp(Color(0.2, 0.26, 0.42), depth)
-	for column in 8:
-		for row in 2:
-			_field.draw_texture_rect(wall, Rect2(column * 48.0, row * 48.0 - 16.0, 48, 48), false, wall_tint)
-		for row in 7:
-			_field.draw_texture_rect(ground, Rect2(column * 48.0, 80.0 + row * 48.0, 48, 48), false, ground_tint)
-	_field.draw_rect(Rect2(0, 76, 360, 4), Color(0.08, 0.06, 0.1))
-	for enemy in _enemies:
-		if enemy.hp > 0:
-			_field.draw_circle(enemy.sprite.position + Vector2(0, 30 if not enemy.boss else 60), 26 if not enemy.boss else 48, Color(0, 0, 0, 0.25))
-	_field.draw_circle(HERO_AT + Vector2(0, 38), 30, Color(0, 0, 0, 0.25))
 
 
 func _draw_bars() -> void:
@@ -504,15 +481,15 @@ func _draw_bars() -> void:
 		var enemy: Dictionary = _enemies[index]
 		if enemy.hp <= 0:
 			continue
-		var at: Vector2 = enemy.sprite.position + Vector2(-40, 44 if not enemy.boss else 74)
+		var at: Vector2 = enemy.sprite.position + Vector2(-48, -96 if enemy.boss else -66)
 		_bar(Rect2(at, Vector2(80, 8)), enemy.hp / enemy.max, UI.BAD)
 		# The colour of the element the enemy is weak to.
 		_bars.draw_rect(Rect2(at + Vector2(84, -2), Vector2(12, 12)), Catalog.ELEMENTS[enemy.weak].color)
 		_bars.draw_rect(Rect2(at + Vector2(84, -2), Vector2(12, 12)), UI.INK, false, 2.0)
 		if index == _target and _phase != OVER:
 			_bars.draw_rect(Rect2(at + Vector2(-4, -4), Vector2(104, 16)), UI.GOLD, false, 2.0)
-	_bar(Rect2(HERO_AT + Vector2(-60, 48), Vector2(120, 10)), _hero_hp / _hero_max, UI.GOOD)
-	_bars.draw_string(get_theme_default_font(), HERO_AT + Vector2(-60, 78), "%s  %d/%d" % [Catalog.HERO_NAME, roundi(_hero_hp), roundi(_hero_max)], HORIZONTAL_ALIGNMENT_CENTER, 120, UI.BODY, UI.TEXT)
+	_bar(Rect2(HERO_AT + Vector2(-60, 60), Vector2(120, 10)), _hero_hp / _hero_max, UI.GOOD)
+	_bars.draw_string(get_theme_default_font(), HERO_AT + Vector2(-60, 90), "%s  %d/%d" % [Catalog.HERO_NAME, roundi(_hero_hp), roundi(_hero_max)], HORIZONTAL_ALIGNMENT_CENTER, 120, UI.BODY, UI.TEXT)
 	if _phase == PLAYER:
 		_bar(Rect2(8, 388, 344, 6), _timer / TURN_TIME, UI.GOLD)
 

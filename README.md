@@ -1,6 +1,6 @@
 # Overgeared Forge
 
-Jeu de forge et de collection en pixel art, pour navigateur et Android. Tu joues Grid, le forgeron : tu forges des armes en trois gestes, leur rareté dépend de ton adresse, et tu les testes dans la mine pour rapporter de meilleurs matériaux. Fait avec [Godot](https://godotengine.org) 4.7.
+Jeu de forge et de collection en pixel art, pour navigateur et Android. Tu joues Grid, le forgeron : tu forges des armes en trois gestes, leur rareté dépend de ton adresse, et tu pars en expédition avec pour rapporter de meilleurs matériaux. Fait avec [Godot](https://godotengine.org) 4.7.
 
 Jeu de fans gratuit et non officiel, inspiré de l'anime *Overgeared*. Voir [CREDITS.md](CREDITS.md).
 
@@ -13,7 +13,7 @@ Les deux sont refaits à chaque push sur `main`.
 
 ## Comment on joue
 
-On commence avec 6 fer et deux plans (épée, dague). Tout le reste se gagne dans la mine.
+On commence avec 6 fer et deux plans (épée, dague). Tout le reste se gagne en expédition.
 
 **Forge.** Choisis un plan et un matériau (3 unités par objet), puis :
 
@@ -25,19 +25,26 @@ La moyenne des trois gestes donne une note sur 100, et la note donne la rareté 
 
 | Matériau | Élément | Rareté max | Où le trouver |
 |---|---|---|---|
-| Fer | Neutre | Épique | Dès le premier étage |
-| Acier ardent, Givre-argent, Pierre d'orage | Feu, Glace, Foudre | Unique | Un peu dès le début, surtout à partir de l'étage 6 |
-| Mithril | Neutre | Légendaire | À partir de l'étage 6, surtout après le 11 |
-| Orichalque bleu | Foudre | Légendaire | À partir de l'étage 11 |
+| Fer | Neutre | Épique | Dès la première étape |
+| Acier ardent, Givre-argent, Pierre d'orage | Feu, Glace, Foudre | Unique | Un peu dès le début, surtout à partir de l'étape 6 |
+| Mithril | Neutre | Légendaire | À partir de l'étape 6, surtout après la 11 |
+| Orichalque bleu | Foudre | Légendaire | À partir de l'étape 11 |
 
-**Mine.** Chaque étage est un combat, de plus en plus dur, avec un boss tous les 5 étages. Grid porte jusqu'à trois armes et une armure. À chaque tour, il frappe tout seul à la fin du chrono ; avant, tu peux toucher l'arme en main pour lancer sa compétence, ou une autre arme pour en changer. Chaque ennemi craint un élément (le carré de couleur à côté de sa vie) : la bonne arme fait 50 % de dégâts en plus.
+**Expédition.** Chaque étape est un combat, de plus en plus dur, avec un boss toutes les 5 étapes. Grid porte jusqu'à trois armes et une armure. À chaque tour, il frappe tout seul à la fin du chrono ; avant, tu peux toucher l'arme en main pour lancer sa compétence, ou une autre arme pour en changer. Chaque ennemi craint un élément (le carré de couleur au bout de sa barre de vie) : la bonne arme fait 50 % de dégâts en plus.
 
-Chaque ennemi battu laisse un matériau, meilleur en profondeur. Après chaque étage, il faut choisir :
+| Étapes | Zone | Ennemis | Boss |
+|---|---|---|---|
+| 1 à 5 | Canyon de Kesan | Gobelin, squelette, orc | Chef orc |
+| 6 à 10 | Terres du comte Ashur | Soldat, mercenaire, chevalier | Capitaine d'Ashur |
+| 11 à 15 | Temple de Yatan | Adepte, fanatique, prêtre noir | Malacus |
+| 16 et plus | Profondeurs | Joueur rival et les plus forts des zones précédentes | Les trois boss, à tour de rôle |
 
-- **descendre** avec un bonus (potion, aiguisage ou renfort) pour ramasser davantage ;
-- **remonter** et garder tout le butin porté.
+Chaque ennemi battu laisse un matériau, meilleur à mesure qu'on avance. Après chaque étape, il faut choisir :
 
-Si Grid est battu, le butin porté est perdu. Chaque boss battu donne un nouveau plan (lance, bouclier, hache, plastron, marteau, faux), gardé quoi qu'il arrive, et ouvre une entrée directe à l'étage suivant.
+- **continuer** avec un bonus (potion, aiguisage ou renfort) pour ramasser davantage ;
+- **rentrer** et garder tout le butin porté.
+
+Si Grid est battu, le butin porté est perdu. Chaque boss battu donne un nouveau plan (lance, bouclier, hache, plastron, marteau, faux), gardé quoi qu'il arrive, et permet de repartir directement de l'étape suivante.
 
 **Armes.** Équipe trois armes et une armure, fonds le reste pour récupérer un peu de matériau. Sans arme, Grid se bat avec son marteau de forge : on n'est jamais bloqué.
 
@@ -45,15 +52,27 @@ Si Grid est battu, le butin porté est perdu. Chaque boss battu donne un nouveau
 
 ## Modifier le jeu
 
-Tout le contenu est dans [data/catalog.gd](data/catalog.gd) : raretés, matériaux, plans, compétences, ennemis, butin par profondeur, bonus. Les sons sont nommés par ce qui se passe (`hammer`, `hurt`, `rarity_4`…) dans [scripts/sfx.gd](scripts/sfx.gd) : une ligne par son. Changer un chiffre ou ajouter une ligne suffit, le reste du jeu suit.
+Tout le contenu est dans [data/catalog.gd](data/catalog.gd) : raretés, matériaux, plans, compétences, ennemis, zones, butin par zone, bonus. Les sons sont nommés par ce qui se passe (`hammer`, `hurt`, `rarity_4`…) dans [scripts/sfx.gd](scripts/sfx.gd) : une ligne par son. Changer un chiffre ou ajouter une ligne suffit, le reste du jeu suit.
 
 | Fichier | Rôle |
 |---|---|
 | `scripts/forge.gd`, `scripts/forge_stage.gd` | Les trois gestes et l'atelier |
-| `scripts/combat.gd` | La mine |
+| `scripts/combat.gd` | L'expédition |
+| `scripts/actor.gd` | Un personnage animé, avec son arme en main |
 | `scripts/armory.gd`, `scripts/album.gd` | Les armes et l'album |
 | `scripts/save.gd` | La sauvegarde (`user://save.json`) |
 | `scripts/ui.gd` | Couleurs, boutons, images d'armes |
+
+## Personnages et décors
+
+Les personnages viennent du [générateur de personnages LPC](https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/) : chacun est une pile de couches (corps, tête, coiffure, vêtements) recolorées. Pour en modifier un ou en ajouter, change la liste `CHARACTERS` de [tools/build_lpc.py](tools/build_lpc.py), puis :
+
+```sh
+python3 tools/build_lpc.py          # refait assets/lpc/*.png et CREDITS-LPC.md
+python3 tools/build_backdrops.py    # refait les décors de assets/lpc/backdrops
+```
+
+Il faut Python avec Pillow, et `curl`. Un nouvel ennemi se déclare ensuite dans `ENEMIES` de `data/catalog.gd`, avec le nom de son image et celui de l'arme qu'il tient.
 
 ## Lancer et vérifier
 

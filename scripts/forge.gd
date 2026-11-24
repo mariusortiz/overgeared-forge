@@ -74,7 +74,7 @@ func _show_select() -> void:
 	main.lock_tabs(false)
 	_stage.hide_weapon()
 	UI.clear(_panel)
-	_panel.add_child(UI.label("Plan  (les boss de la mine en donnent de nouveaux)", UI.SMALL, UI.DIM))
+	_panel.add_child(UI.label("Plan  (les boss en expédition en donnent de nouveaux)", UI.SMALL, UI.DIM))
 	var plans := HBoxContainer.new()
 	plans.add_theme_constant_override("separation", 3)
 	_panel.add_child(plans)
@@ -121,7 +121,7 @@ func _show_select() -> void:
 	_panel.add_child(UI.centered(what, UI.BODY, element.color))
 
 	var enough := Save.material_count(_material) >= Catalog.FORGE_COST
-	var go := UI.button("FORGER  (%d %s)" % [Catalog.FORGE_COST, mat.name] if enough else "Pas assez de matériaux : va à la mine")
+	var go := UI.button("FORGER  (%d %s)" % [Catalog.FORGE_COST, mat.name] if enough else "Pas assez de matériaux : pars en expédition")
 	go.custom_minimum_size.y = 42
 	go.disabled = not enough
 	go.pressed.connect(_start)
@@ -131,7 +131,7 @@ func _show_select() -> void:
 func _start() -> void:
 	Save.add_material(_material, -Catalog.FORGE_COST)
 	main.lock_tabs(true)
-	_stage.show_weapon(_plan, _material, Stage.ANVIL + Vector2(0, -44))
+	_stage.show_weapon(_plan, _material, Stage.ANVIL + Vector2(0, -34))
 	UI.clear(_panel)
 	_hint = UI.centered("", UI.BODY, UI.TEXT, 340.0)
 	_hint.custom_minimum_size.y = 76
@@ -152,7 +152,7 @@ func _begin_heat() -> void:
 	_temperature = 0.0
 	_in_band = 0.0
 	_hint.text = "1/3  Chauffe\nMaintiens appuyé pour chauffer, relâche pour refroidir. Reste dans la zone dorée !"
-	_stage.move_weapon(Stage.FURNACE + Vector2(26, -6))
+	_stage.move_weapon(Stage.FURNACE + Vector2(30, -14))
 
 
 func _begin_hammer() -> void:
@@ -162,7 +162,7 @@ func _begin_hammer() -> void:
 	_ring = RING_START
 	_ring_wait = 0.6
 	_hint.text = "2/3  Martelage\nTouche quand le cercle blanc atteint l'anneau doré."
-	_stage.move_weapon(Stage.ANVIL + Vector2(0, -44))
+	_stage.move_weapon(Stage.ANVIL + Vector2(0, -34))
 
 
 func _begin_quench() -> void:
@@ -170,7 +170,7 @@ func _begin_quench() -> void:
 	_clock = 0.0
 	_quench_zone = _rng.randf_range(0.25, 0.75)
 	_hint.text = "3/3  Trempe\nTouche quand le curseur passe dans la zone bleue."
-	_stage.move_weapon(Stage.BARREL + Vector2(0, -52))
+	_stage.move_weapon(Stage.BARREL + Vector2(0, -40))
 
 
 ## Shows a gesture's score for a moment, then goes on.
@@ -326,7 +326,7 @@ func _show_result() -> void:
 	again.custom_minimum_size.y = 40
 	again.pressed.connect(_show_select)
 	_panel.add_child(again)
-	var mine := UI.button("ALLER À LA MINE")
+	var mine := UI.button("PARTIR EN EXPÉDITION")
 	mine.custom_minimum_size.y = 40
 	mine.pressed.connect(func(): main.open("combat"))
 	_panel.add_child(mine)

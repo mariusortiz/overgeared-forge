@@ -4,12 +4,12 @@ extends Control
 ## Command line, after "--":
 ##   --screen=forge|combat|armory|album   opens on that screen
 ##   --auto      the game plays by itself (forge gestures, combat choices; it
-##               leaves the mine when its hit points get low)
+##               comes back from the expedition when its hit points get low)
 ##   --demo      starts with a few weapons and materials
 ##   --basic     starts with what six iron give: two average iron weapons
 ##   --mid       starts with a mid-game set (elemental weapons, a shield)
-##   --floor=6   with --auto, the floor the mine is entered at
-##   --deep      with --auto, never leaves the mine: goes down until beaten
+##   --floor=6   with --auto, the stage the expedition starts at
+##   --deep      with --auto, never comes back: goes on until beaten
 ##   --test      does not read or write the save file
 ##   --capture=/path.png [--delay=2]   saves a picture of the window, then quits
 
@@ -19,7 +19,7 @@ const SCREENS := {
 	"armory": preload("res://scripts/armory.gd"),
 	"album": preload("res://scripts/album.gd"),
 }
-const TABS := [["forge", "FORGE"], ["combat", "MINE"], ["armory", "ARMES"], ["album", "ALBUM"]]
+const TABS := [["forge", "FORGE"], ["combat", "EXPÉDITION"], ["armory", "ARMES"], ["album", "ALBUM"]]
 const TOP := 36.0
 const BOTTOM := 56.0
 

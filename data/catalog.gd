@@ -68,10 +68,10 @@ const FORGE_COST := 3
 const SLOT_LIMITS := {"weapon": 3, "armor": 1}
 
 const HERO_NAME := "Grid"
-const HERO_TILE := 98
+const HERO_SPRITE := "grid"
 const HERO_HP := 120
 ## Without any weapon, Grid fights with his forge hammer.
-const BARE_WEAPON := {"uid": 0, "plan": "sword", "material": "iron", "rarity": 0, "attack": 6, "bare": true}
+const BARE_WEAPON := {"uid": 0, "plan": "hammer", "material": "iron", "rarity": 0, "attack": 6, "bare": true}
 const WEAK_BONUS := 1.5
 
 # --- The mine --------------------------------------------------------------
@@ -83,29 +83,34 @@ const FLOOR_GROWTH := 1.1
 ## How many enemies on the floors before a boss.
 const FLOOR_SIZES := [2, 2, 3, 3]
 
-## tile: the sprite's number in assets/tiles/tiny_dungeon.png.
+## sprite: a character of assets/lpc (see tools/build_lpc.py);
+## weapon: a picture of assets/weapons, held in hand.
 const ENEMIES := {
-	"slime": {"name": "Slime", "tile": 108, "hp": 24, "attack": 3, "weak": "fire"},
-	"bat": {"name": "Chauve-souris", "tile": 120, "hp": 20, "attack": 4, "weak": "ice"},
-	"spider": {"name": "Araignée", "tile": 122, "hp": 30, "attack": 5, "weak": "lightning"},
-	"rat": {"name": "Rat", "tile": 123, "hp": 26, "attack": 5, "weak": "fire"},
-	"ghost": {"name": "Fantôme", "tile": 121, "hp": 30, "attack": 6, "weak": "lightning"},
-	"crab": {"name": "Crabe", "tile": 110, "hp": 40, "attack": 5, "weak": "ice"},
-	"bandit": {"name": "Pillard", "tile": 112, "hp": 36, "attack": 7, "weak": "fire"},
-	"cultist": {"name": "Sorcier", "tile": 111, "hp": 32, "attack": 8, "weak": "ice"},
-	"cyclops": {"name": "Cyclope", "tile": 109, "hp": 160, "attack": 9, "weak": "ice", "boss": true},
-	"mimic": {"name": "Coffre vorace", "tile": 92, "hp": 170, "attack": 10, "weak": "fire", "boss": true},
-	"warlock": {"name": "Mage noir", "tile": 84, "hp": 180, "attack": 11, "weak": "lightning", "boss": true},
+	"goblin": {"name": "Gobelin", "sprite": "goblin", "weapon": "mace2", "hp": 22, "attack": 3, "weak": "fire"},
+	"skeleton": {"name": "Squelette", "sprite": "skeleton", "weapon": "sword1", "hp": 24, "attack": 4, "weak": "lightning"},
+	"orc": {"name": "Orc", "sprite": "orc", "weapon": "axe1", "hp": 32, "attack": 5, "weak": "ice"},
+	"soldier": {"name": "Soldat d'Ashur", "sprite": "soldier", "weapon": "spear2", "hp": 28, "attack": 5, "weak": "ice"},
+	"mercenary": {"name": "Mercenaire", "sprite": "mercenary", "weapon": "dagger1", "hp": 26, "attack": 6, "weak": "fire"},
+	"knight": {"name": "Chevalier d'Ashur", "sprite": "knight", "weapon": "sword3", "hp": 42, "attack": 5, "weak": "lightning"},
+	"cultist": {"name": "Adepte de Yatan", "sprite": "cultist", "weapon": "dagger5", "hp": 30, "attack": 7, "weak": "ice"},
+	"zealot": {"name": "Fanatique", "sprite": "zealot", "weapon": "mace1", "hp": 34, "attack": 8, "weak": "fire"},
+	"dark_priest": {"name": "Prêtre noir", "sprite": "dark_priest", "weapon": "staff1", "hp": 28, "attack": 9, "weak": "lightning"},
+	"rival": {"name": "Joueur rival", "sprite": "rival", "weapon": "sword1", "hp": 44, "attack": 8, "weak": "fire"},
+	"orc_chief": {"name": "Chef orc", "sprite": "orc_chief", "weapon": "axe4", "hp": 160, "attack": 9, "weak": "fire", "boss": true},
+	"captain": {"name": "Capitaine d'Ashur", "sprite": "captain", "weapon": "sword3", "hp": 170, "attack": 10, "weak": "lightning", "boss": true},
+	"malacus": {"name": "Malacus", "sprite": "malacus", "weapon": "staff3", "hp": 180, "attack": 11, "weak": "ice", "boss": true},
 }
-## One line for every BOSS_EVERY floors; the last line serves for all deeper floors.
-const ENEMY_POOLS := [
-	["slime", "bat", "spider"],
-	["rat", "ghost", "crab", "spider"],
-	["ghost", "crab", "bandit", "cultist"],
+## One zone for every BOSS_EVERY floors; the last one serves for all deeper floors.
+## backdrop: a picture of assets/lpc/backdrops (see tools/build_backdrops.py).
+const ZONES := [
+	{"name": "Canyon de Kesan", "backdrop": "canyon", "enemies": ["goblin", "skeleton", "orc"]},
+	{"name": "Terres du comte Ashur", "backdrop": "castle", "enemies": ["soldier", "mercenary", "knight"]},
+	{"name": "Temple de Yatan", "backdrop": "temple", "enemies": ["cultist", "zealot", "dark_priest"]},
+	{"name": "Profondeurs", "backdrop": "temple", "enemies": ["rival", "knight", "dark_priest", "orc"]},
 ]
-const BOSSES := ["cyclops", "mimic", "warlock"]
+const BOSSES := ["orc_chief", "captain", "malacus"]
 
-## What an enemy drops, by depth: [material, weight]. Same lines as ENEMY_POOLS.
+## What an enemy drops, by depth: [material, weight]. One line for each zone.
 ## A boss drops BOSS_DROPS materials from the next line, and a new plan.
 const LOOT := [
 	[["iron", 70], ["ember", 10], ["frost", 10], ["storm", 10]],
@@ -177,7 +182,7 @@ static func is_boss_floor(level: int) -> bool:
 	return level % BOSS_EVERY == 0
 
 
-## Which line of ENEMY_POOLS and LOOT a floor uses.
+## Which zone and which line of LOOT a floor uses.
 static func depth_tier(level: int) -> int:
 	@warning_ignore("integer_division")
 	return (level - 1) / BOSS_EVERY
@@ -187,11 +192,15 @@ static func floor_enemies(level: int, rng: RandomNumberGenerator) -> Array:
 	var tier := depth_tier(level)
 	if is_boss_floor(level):
 		return [BOSSES[tier % BOSSES.size()]]
-	var pool: Array = ENEMY_POOLS[mini(tier, ENEMY_POOLS.size() - 1)]
+	var pool: Array = zone(level).enemies
 	var list := []
 	for i in FLOOR_SIZES[(level - 1) % BOSS_EVERY]:
 		list.append(pool[rng.randi() % pool.size()])
 	return list
+
+
+static func zone(level: int) -> Dictionary:
+	return ZONES[mini(depth_tier(level), ZONES.size() - 1)]
 
 
 static func floor_strength(level: int) -> float:

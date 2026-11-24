@@ -11,10 +11,7 @@ const GOLD := Color("ffc94a")
 const GOOD := Color("7be08a")
 const BAD := Color("ff6b6b")
 
-const TILES := preload("res://assets/tiles/tiny_dungeon.png")
 const WEAPON_SHADER := preload("res://assets/weapon.gdshader")
-const TILE_SIZE := 16
-const TILE_COLUMNS := 12
 
 ## Text sizes. The font is drawn on a 15 px grid.
 const SMALL := 15
@@ -65,21 +62,6 @@ static func highlight(node: Button, on: bool, color: Color = GOLD) -> void:
 	node.add_theme_stylebox_override("normal", box(EDGE if on else PANEL_LIGHT, color if on else EDGE))
 
 
-static func tile_texture(index: int) -> AtlasTexture:
-	var atlas := AtlasTexture.new()
-	atlas.atlas = TILES
-	@warning_ignore("integer_division")
-	atlas.region = Rect2(index % TILE_COLUMNS * TILE_SIZE, index / TILE_COLUMNS * TILE_SIZE, TILE_SIZE, TILE_SIZE)
-	return atlas
-
-
-static func tile_sprite(index: int, zoom := 4.0) -> Sprite2D:
-	var sprite := Sprite2D.new()
-	sprite.texture = tile_texture(index)
-	sprite.scale = Vector2(zoom, zoom)
-	return sprite
-
-
 static func weapon_material(material: String, rarity: int) -> ShaderMaterial:
 	var shader := ShaderMaterial.new()
 	shader.shader = WEAPON_SHADER
@@ -94,7 +76,12 @@ static func weapon_material(material: String, rarity: int) -> ShaderMaterial:
 
 
 static func weapon_texture(plan: String) -> Texture2D:
-	return load("res://assets/weapons/%s.png" % Catalog.PLANS[plan].sprite)
+	return picture(Catalog.PLANS[plan].sprite)
+
+
+## A picture of assets/weapons by its file name.
+static func picture(file: String) -> Texture2D:
+	return load("res://assets/weapons/%s.png" % file)
 
 
 ## A centred label, wrapped to a width when one is given.

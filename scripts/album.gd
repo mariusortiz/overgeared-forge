@@ -58,6 +58,6 @@ func _describe(plan: String, material: String, best: int) -> void:
 		_caption.text = "%s\nMeilleure rareté : %s" % [text, Catalog.RARITIES[best].name]
 		_caption.add_theme_color_override("font_color", Catalog.RARITIES[best].color)
 	else:
-		_caption.text = text + "\n" + ("Pas encore forgé" if Save.knows(plan) else "Bats les boss de la mine pour trouver ce plan")
+		_caption.text = text + "\n" + ("Pas encore forgé" if Save.knows(plan) else "Bats les boss en expédition pour trouver ce plan")
 		_caption.add_theme_color_override("font_color", UI.DIM)
 	Sfx.play("click")
