@@ -2,13 +2,14 @@ extends Control
 ## The frame around every screen: materials at the top, tabs at the bottom.
 ##
 ## Command line, after "--":
-##   --screen=forge|combat|armory|album   opens on that screen
+##   --screen=forge|combat|armory|album   opens on that screen, without the title
 ##   --auto      the game plays by itself (forge gestures, combat choices; it
 ##               comes back from the expedition when its hit points get low)
 ##   --demo      starts with a few weapons and materials
 ##   --basic     starts with what six iron give: two average iron weapons
 ##   --mid       starts with a mid-game set (elemental weapons, a shield)
 ##   --floor=6   with --auto, the stage the expedition starts at
+##   --wait      with --auto, the forge waits on its GO button (for pictures)
 ##   --deep      with --auto, never comes back: goes on until beaten
 ##   --test      does not read or write the save file
 ##   --capture=/path.png [--delay=2]   saves a picture of the window, then quits
@@ -19,6 +20,7 @@ const SCREENS := {
 	"armory": preload("res://scripts/armory.gd"),
 	"album": preload("res://scripts/album.gd"),
 }
+const Title := preload("res://scripts/title.gd")
 const TABS := [["forge", "FORGE"], ["combat", "EXPÉDITION"], ["armory", "ARMES"], ["album", "ALBUM"]]
 const TOP := 36.0
 const BOTTOM := 56.0
@@ -89,6 +91,9 @@ func _ready() -> void:
 	Save.changed.connect(_refresh_chips)
 	_refresh_chips()
 	open(options.get("screen", "forge"))
+	# The title screen, unless the command line asks for a screen or for --auto.
+	if not options.has("screen") and not auto:
+		add_child(Title.new())
 
 	if options.has("capture"):
 		await get_tree().create_timer(float(options.get("delay", "2"))).timeout

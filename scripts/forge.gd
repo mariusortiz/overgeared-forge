@@ -1,12 +1,16 @@
 extends Control
 ## The forge: choose a plan and a material, then three gestures (heat, hammer, quench).
-## Their average score, out of 100, decides the weapon's rarity.
+## Their average note, out of 100, and the weakest of the three decide the rarity
+## (see RARITY_RULES in data/catalog.gd). Each gesture starts when GO is pressed.
 
 const Stage := preload("res://scripts/forge_stage.gd")
 
-enum { SELECT, HEAT, HAMMER, QUENCH, PAUSE, RESULT }
+enum { SELECT, READY, HEAT, HAMMER, QUENCH, PAUSE, RESULT }
 
-const HEAT_TIME := 6.0
+## The heat is noted for this long, from the moment the zone is first reached
+## (or after HEAT_GRACE seconds at most).
+const HEAT_TIME := 5.0
+const HEAT_GRACE := 2.5
 const HEAT_BAND := 0.11
 const STRIKES := 6
 const RING_START := 46.0
@@ -23,12 +27,15 @@ var _stage: Node2D
 var _panel: VBoxContainer
 var _gauge: Control
 var _hint: Label
+var _go: Button
+var _next := HEAT
 
 var _clock := 0.0
 var _scores := [0.0, 0.0, 0.0]
 var _temperature := 0.0
 var _band := 0.6
 var _in_band := 0.0
+var _heat_clock := -1.0
 var _strike := 0
 var _strike_total := 0.0
 var _ring := RING_START
@@ -134,43 +141,60 @@ func _start() -> void:
 	_stage.show_weapon(_plan, _material, Stage.ANVIL + Vector2(0, -34))
 	UI.clear(_panel)
 	_hint = UI.centered("", UI.BODY, UI.TEXT, 340.0)
-	_hint.custom_minimum_size.y = 76
+	_hint.custom_minimum_size.y = 70
 	_panel.add_child(_hint)
 	_gauge = Control.new()
-	_gauge.custom_minimum_size = Vector2(340, 130)
+	_gauge.custom_minimum_size = Vector2(340, 124)
 	_gauge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_gauge.draw.connect(_draw_gauge)
 	_panel.add_child(_gauge)
-	_begin_heat()
+	_go = UI.button("GO !", UI.BIG)
+	_go.custom_minimum_size.y = 56
+	UI.highlight(_go, true)
+	_go.pressed.connect(_on_go)
+	_panel.add_child(_go)
+	_prepare(HEAT)
 
 
 # --- The three gestures ----------------------------------------------------
 
-func _begin_heat() -> void:
-	_state = HEAT
+## Explains the next gesture and waits for the player to press GO.
+func _prepare(gesture: int) -> void:
+	_state = READY
+	_next = gesture
+	_go.visible = true
+	match gesture:
+		HEAT:
+			_temperature = 0.0
+			_hint.text = "1/3  Chauffe\nMaintiens appuyé pour chauffer, relâche pour refroidir. Reste dans la zone dorée !"
+			_stage.move_weapon(Stage.FURNACE + Vector2(30, -14))
+		HAMMER:
+			_strike = 0
+			_hint.text = "2/3  Martelage\nSix coups : touche quand le cercle blanc atteint l'anneau doré."
+			_stage.move_weapon(Stage.ANVIL + Vector2(0, -34))
+		QUENCH:
+			_quench_zone = _rng.randf_range(0.25, 0.75)
+			_cursor = 0.0
+			_hint.text = "3/3  Trempe\nUn seul essai : touche quand le curseur passe dans la zone bleue."
+			_stage.move_weapon(Stage.BARREL + Vector2(0, -40))
+	if main.auto and not main.options.has("wait"):
+		_on_go.call_deferred()
+
+
+func _on_go() -> void:
+	if _state != READY:
+		return
+	_go.visible = false
 	_clock = 0.0
-	_temperature = 0.0
-	_in_band = 0.0
-	_hint.text = "1/3  Chauffe\nMaintiens appuyé pour chauffer, relâche pour refroidir. Reste dans la zone dorée !"
-	_stage.move_weapon(Stage.FURNACE + Vector2(30, -14))
-
-
-func _begin_hammer() -> void:
-	_state = HAMMER
-	_strike = 0
-	_strike_total = 0.0
-	_ring = RING_START
-	_ring_wait = 0.6
-	_hint.text = "2/3  Martelage\nTouche quand le cercle blanc atteint l'anneau doré."
-	_stage.move_weapon(Stage.ANVIL + Vector2(0, -34))
-
-
-func _begin_quench() -> void:
-	_state = QUENCH
-	_clock = 0.0
-	_quench_zone = _rng.randf_range(0.25, 0.75)
-	_hint.text = "3/3  Trempe\nTouche quand le curseur passe dans la zone bleue."
-	_stage.move_weapon(Stage.BARREL + Vector2(0, -40))
+	_state = _next
+	match _next:
+		HEAT:
+			_in_band = 0.0
+			_heat_clock = -1.0
+		HAMMER:
+			_strike_total = 0.0
+			_ring = RING_START
+			_ring_wait = 0.6
 
 
 ## Shows a gesture's score for a moment, then goes on.
@@ -196,12 +220,17 @@ func _process(delta: float) -> void:
 			if main.auto:
 				holding = _temperature < _band
 			_temperature = clampf(_temperature + (0.6 if holding else -0.45) * delta, 0.0, 1.0)
-			if absf(_temperature - _band) <= HEAT_BAND:
-				_in_band += delta
+			var inside := absf(_temperature - _band) <= HEAT_BAND
 			_stage.heat = _temperature
-			if _clock >= HEAT_TIME:
-				# The first second is spent climbing to the zone: it is not counted.
-				_pause(clampf(_in_band / (HEAT_TIME - 1.0), 0.0, 1.0), 0, HAMMER)
+			# Climbing to the zone is not noted: the count starts once it is reached.
+			if _heat_clock < 0.0 and (inside or _clock >= HEAT_GRACE):
+				_heat_clock = 0.0
+			if _heat_clock >= 0.0:
+				_heat_clock += delta
+				if inside:
+					_in_band += delta
+				if _heat_clock >= HEAT_TIME:
+					_pause(clampf(_in_band / HEAT_TIME, 0.0, 1.0), 0, HAMMER)
 		HAMMER:
 			if _ring_wait > 0.0:
 				_ring_wait -= delta
@@ -227,8 +256,8 @@ func _process(delta: float) -> void:
 		PAUSE:
 			if _clock >= 0.9:
 				match _after_pause:
-					HAMMER: _begin_hammer()
-					QUENCH: _begin_quench()
+					HAMMER: _prepare(HAMMER)
+					QUENCH: _prepare(QUENCH)
 					RESULT: _show_result()
 	if _gauge and is_instance_valid(_gauge):
 		_gauge.queue_redraw()
@@ -262,7 +291,7 @@ func _input(event: InputEvent) -> void:
 func _draw_gauge() -> void:
 	var width := _gauge.size.x
 	var bar := Rect2(10, 40, width - 20, 30)
-	match _state:
+	match _next if _state == READY else _state:
 		HEAT:
 			_gauge.draw_rect(bar, UI.INK)
 			var cold := Color("3a4a8a")
@@ -276,7 +305,7 @@ func _draw_gauge() -> void:
 			_gauge.draw_rect(Rect2(x - 3, bar.position.y - 8, 6, bar.size.y + 16), Color.WHITE)
 			_gauge.draw_rect(bar, UI.EDGE, false, 2.0)
 			# Time left.
-			_gauge.draw_rect(Rect2(10, 96, (width - 20) * (1.0 - _clock / HEAT_TIME), 6), UI.DIM)
+			_gauge.draw_rect(Rect2(10, 96, (width - 20) * (1.0 - maxf(_heat_clock, 0.0) / HEAT_TIME), 6), UI.DIM)
 		HAMMER:
 			var center := Vector2(width / 2.0, 58)
 			_gauge.draw_circle(center, RING_START + 6, UI.INK)
@@ -300,7 +329,8 @@ func _draw_gauge() -> void:
 func _show_result() -> void:
 	_state = RESULT
 	var score: float = (_scores[0] + _scores[1] + _scores[2]) / 3.0 * 100.0
-	var rarity := Catalog.roll_rarity(score, _material, _rng)
+	var weakest: float = minf(_scores[0], minf(_scores[1], _scores[2])) * 100.0
+	var rarity := Catalog.roll_rarity(score, weakest, _material, _rng)
 	var item := Save.add_item(_plan, _material, rarity, score)
 	var info: Dictionary = Catalog.RARITIES[rarity]
 	_stage.reveal(_material, rarity)
@@ -321,6 +351,9 @@ func _show_result() -> void:
 	elif rarity == Catalog.MATERIALS[_material].max_rarity:
 		note = "Rareté maximale pour ce matériau."
 	_panel.add_child(UI.centered(note, UI.SMALL, UI.GOLD))
+	var hint := Catalog.next_rarity_hint(rarity, _material)
+	if hint != "":
+		_panel.add_child(UI.centered("Pour " + hint, UI.SMALL, UI.DIM))
 
 	var again := UI.button("FORGER ENCORE")
 	again.custom_minimum_size.y = 40

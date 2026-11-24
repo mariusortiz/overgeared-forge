@@ -65,6 +65,13 @@ const START_PLANS := ["sword", "dagger"]
 const START_MATERIALS := {"iron": 6}
 
 const FORGE_COST := 3
+## To reach a rarity: [rarity, lowest note, lowest note allowed for the weakest gesture].
+## One failed gesture is enough to miss the high rarities.
+const RARITY_RULES := [[1, 55, 0], [2, 72, 50], [3, 84, 65], [4, 93, 80]]
+## The note moves by this much, up or down, at random.
+const RARITY_LUCK := 4.0
+## Mythic: [lowest note, lowest note for the weakest gesture, chances].
+const MYTH_RULE := [96, 90, 0.2]
 const SLOT_LIMITS := {"weapon": 3, "armor": 1}
 
 const HERO_NAME := "Grid"
@@ -128,19 +135,33 @@ const BONUSES := [
 ]
 
 
-## The rarity of a forged item, from the score (0 to 100) of the three gestures.
-static func roll_rarity(score: float, material: String, rng: RandomNumberGenerator) -> int:
-	var quality := score + rng.randf_range(-8.0, 8.0)
+## The rarity of a forged item, from the note (0 to 100) of the three gestures
+## and the note of the weakest of them.
+static func roll_rarity(score: float, weakest: float, material: String, rng: RandomNumberGenerator) -> int:
+	var quality := score + rng.randf_range(-RARITY_LUCK, RARITY_LUCK)
 	var rarity := 0
-	for threshold in [45.0, 62.0, 76.0, 88.0]:
-		if quality >= threshold:
-			rarity += 1
+	for rule in RARITY_RULES:
+		if quality >= rule[1] and weakest >= rule[2]:
+			rarity = rule[0]
 	var mat: Dictionary = MATERIALS[material]
 	rarity = mini(rarity, mat.max_rarity)
 	# A near-perfect forge with the best material can go beyond legendary.
-	if material == MYTH_MATERIAL and score >= 92.0 and rng.randf() < 0.15:
+	if material == MYTH_MATERIAL and score >= MYTH_RULE[0] and weakest >= MYTH_RULE[1] and rng.randf() < MYTH_RULE[2]:
 		rarity = MYTH
 	return rarity
+
+
+## What it takes to get the rarity above this one, as a sentence; "" at the top.
+static func next_rarity_hint(rarity: int, material: String) -> String:
+	if rarity >= MATERIALS[material].max_rarity:
+		return ""
+	for rule in RARITY_RULES:
+		if rule[0] == rarity + 1:
+			var text := "%s : note %d" % [RARITIES[rule[0]].name, rule[1]]
+			if rule[2] > 0:
+				text += ", aucun geste sous %d" % rule[2]
+			return text
+	return ""
 
 
 ## An item's attack (weapon) or hit points (armour).

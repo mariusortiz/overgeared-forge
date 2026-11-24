@@ -49,7 +49,7 @@ func _refresh() -> void:
 		var texts := VBoxContainer.new()
 		texts.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		texts.add_theme_constant_override("separation", -2)
-		for text in [[Catalog.item_name(item), UI.TEXT], [rarity.name, rarity.color], [Catalog.item_stats(item), element.color if Catalog.is_weapon(item) else UI.GOOD]]:
+		for text in [[Catalog.item_name(item), UI.TEXT], ["%s · note %d" % [rarity.name, item.score], rarity.color], [Catalog.item_stats(item), element.color if Catalog.is_weapon(item) else UI.GOOD]]:
 			var label := UI.label(text[0], UI.BODY, text[1])
 			label.clip_text = true
 			texts.add_child(label)

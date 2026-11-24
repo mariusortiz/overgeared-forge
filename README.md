@@ -21,7 +21,18 @@ On commence avec 6 fer et deux plans (épée, dague). Tout le reste se gagne en 
 2. **Martelage** : six coups ; touche quand le cercle blanc atteint l'anneau doré.
 3. **Trempe** : touche quand le curseur passe dans la zone bleue.
 
-La moyenne des trois gestes donne une note sur 100, et la note donne la rareté : Normal, Rare, Épique, Unique, Légendaire. Le matériau fixe la rareté maximale. L'orichalque bleu, forgé presque parfaitement, a une petite chance de donner un objet Mythique.
+Chaque geste ne démarre que lorsqu'on appuie sur GO, et la chauffe n'est notée qu'une fois la zone dorée atteinte.
+
+La moyenne des trois gestes donne une note sur 100. La rareté dépend de cette note et du geste le moins réussi : un seul geste raté suffit à manquer les hautes raretés.
+
+| Rareté | Note | Geste le moins réussi |
+|---|---|---|
+| Rare | 55 | |
+| Épique | 72 | au moins 50 |
+| Unique | 84 | au moins 65 |
+| Légendaire | 93 | au moins 80 |
+
+La note bouge de 4 points au hasard, et le matériau fixe la rareté maximale. L'orichalque bleu, forgé à 96 ou plus sans geste sous 90, a une chance sur cinq de donner un objet Mythique. À rareté égale, une meilleure note donne un objet un peu plus fort ; elle est affichée dans l'écran Armes.
 
 | Matériau | Élément | Rareté max | Où le trouver |
 |---|---|---|---|
