@@ -16,6 +16,11 @@ const WEAPON_SHADER := preload("res://assets/weapon.gdshader")
 const TILE_SIZE := 16
 const TILE_COLUMNS := 12
 
+## Text sizes. The font is drawn on a 15 px grid.
+const SMALL := 15
+const BODY := 20
+const BIG := 30
+
 
 static func box(color: Color, border: Color = EDGE, width := 2) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
@@ -26,7 +31,7 @@ static func box(color: Color, border: Color = EDGE, width := 2) -> StyleBoxFlat:
 	return style
 
 
-static func label(text: String, size := 16, color: Color = TEXT) -> Label:
+static func label(text: String, size := BODY, color: Color = TEXT) -> Label:
 	var node := Label.new()
 	node.text = text
 	node.add_theme_font_size_override("font_size", size)
@@ -34,7 +39,7 @@ static func label(text: String, size := 16, color: Color = TEXT) -> Label:
 	return node
 
 
-static func button(text: String, size := 16) -> Button:
+static func button(text: String, size := BODY) -> Button:
 	var node := Button.new()
 	node.text = text
 	node.focus_mode = Control.FOCUS_NONE
@@ -45,7 +50,7 @@ static func button(text: String, size := 16) -> Button:
 	node.add_theme_stylebox_override("hover", box(PANEL_LIGHT.lightened(0.08)))
 	node.add_theme_stylebox_override("pressed", box(EDGE, GOLD))
 	node.add_theme_stylebox_override("disabled", box(PANEL, PANEL_LIGHT))
-	node.pressed.connect(func(): Sfx.play("metalClick", 1.0, -8.0))
+	node.pressed.connect(func(): Sfx.play("click"))
 	return node
 
 
@@ -92,6 +97,16 @@ static func weapon_texture(plan: String) -> Texture2D:
 	return load("res://assets/weapons/%s.png" % Catalog.PLANS[plan].sprite)
 
 
+## A centred label, wrapped to a width when one is given.
+static func centered(text: String, size := BODY, color: Color = TEXT, width := 0.0) -> Label:
+	var node := label(text, size, color)
+	node.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	if width > 0.0:
+		node.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		node.custom_minimum_size.x = width
+	return node
+
+
 ## A weapon picture for menus (a Control), 32 px times zoom.
 static func weapon_icon(plan: String, material: String, rarity: int, zoom := 2) -> TextureRect:
 	var icon := TextureRect.new()
@@ -104,12 +119,12 @@ static func weapon_icon(plan: String, material: String, rarity: int, zoom := 2) 
 
 
 ## A small coloured ingot followed by a number, for material counts.
-static func material_chip(material: String, count: int, size := 16) -> HBoxContainer:
+static func material_chip(material: String, count: int, size := BODY) -> HBoxContainer:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 3)
 	var ingot := ColorRect.new()
 	ingot.color = Catalog.MATERIALS[material].light.lerp(Catalog.MATERIALS[material].dark, 0.35)
-	ingot.custom_minimum_size = Vector2(10, 10)
+	ingot.custom_minimum_size = Vector2(11, 11)
 	ingot.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(ingot)
 	row.add_child(label(str(count), size, TEXT if count > 0 else DIM))
@@ -123,11 +138,11 @@ static func clear(node: Node) -> void:
 
 
 ## A number or a word that rises and fades above a point.
-static func float_text(parent: Node, text: String, at: Vector2, color: Color, size := 16) -> void:
+static func float_text(parent: Node, text: String, at: Vector2, color: Color, size := BODY) -> void:
 	var node := label(text, size, color)
 	node.add_theme_color_override("font_outline_color", INK)
 	node.add_theme_constant_override("outline_size", 4)
-	node.position = at - Vector2(size * text.length() * 0.3, size)
+	node.position = at - Vector2(size * text.length() * 0.2, size)
 	node.z_index = 20
 	parent.add_child(node)
 	var tween := node.create_tween()

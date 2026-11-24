@@ -1,5 +1,6 @@
 extends Control
-## The weapons the player owns: equip up to three, melt the others back into material.
+## What the player owns: equip up to three weapons and one armour, melt the rest
+## back into material.
 
 var main: Control
 var _list: VBoxContainer
@@ -7,12 +8,12 @@ var _title: Label
 
 
 func _ready() -> void:
-	_title = UI.label("", 16, UI.GOLD)
-	_title.position = Vector2(8, 6)
+	_title = UI.label("", UI.BODY, UI.GOLD)
+	_title.position = Vector2(8, 4)
 	add_child(_title)
 	var scroll := ScrollContainer.new()
-	scroll.position = Vector2(4, 30)
-	scroll.size = Vector2(352, 514)
+	scroll.position = Vector2(4, 32)
+	scroll.size = Vector2(352, 512)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	add_child(scroll)
 	_list = VBoxContainer.new()
@@ -24,50 +25,52 @@ func _ready() -> void:
 
 func _refresh() -> void:
 	UI.clear(_list)
-	_title.text = "ARMES  %d · équipées %d/%d" % [Save.weapons.size(), Save.equipped.size(), Catalog.MAX_EQUIPPED]
-	if Save.weapons.is_empty():
-		_list.add_child(UI.label("\nAucune arme pour l'instant.\nVa à la forge !", 16, UI.DIM))
+	_title.text = "Armes %d/%d  ·  Armure %d/%d" % [
+		Save.equipped_items("weapon").size(), Catalog.SLOT_LIMITS.weapon,
+		Save.equipped_items("armor").size(), Catalog.SLOT_LIMITS.armor]
+	if Save.items.is_empty():
+		_list.add_child(UI.label("\nRien pour l'instant.\nVa à la forge !", UI.BODY, UI.DIM))
 		return
-	var sorted := Save.weapons.duplicate()
-	sorted.sort_custom(func(a, b): return a.attack > b.attack)
-	for weapon in sorted:
-		var rarity: Dictionary = Catalog.RARITIES[weapon.rarity]
-		var element: Dictionary = Catalog.ELEMENTS[Catalog.weapon_element(weapon)]
-		var equipped := Save.is_equipped(weapon.uid)
+	# Equipped first, then the strongest.
+	var sorted := Save.items.duplicate()
+	sorted.sort_custom(func(a, b):
+		if Save.is_equipped(a.uid) != Save.is_equipped(b.uid):
+			return Save.is_equipped(a.uid)
+		return a.attack + a.hp > b.attack + b.hp)
+	for item in sorted:
+		var rarity: Dictionary = Catalog.RARITIES[item.rarity]
+		var element: Dictionary = Catalog.ELEMENTS[Catalog.item_element(item)]
+		var equipped := Save.is_equipped(item.uid)
 		var row := UI.panel(UI.PANEL, rarity.color if equipped else UI.EDGE)
 		var line := HBoxContainer.new()
 		line.add_theme_constant_override("separation", 6)
 		row.add_child(line)
-		line.add_child(UI.weapon_icon(weapon.plan, weapon.material, weapon.rarity, 2))
+		line.add_child(UI.weapon_icon(item.plan, item.material, item.rarity, 2))
 		var texts := VBoxContainer.new()
 		texts.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		texts.add_theme_constant_override("separation", 0)
-		var weapon_name := UI.label(Catalog.weapon_name(weapon), 16)
-		weapon_name.clip_text = true
-		texts.add_child(weapon_name)
-		texts.add_child(UI.label(rarity.name, 16, rarity.color))
-		var stats := UI.label("Attaque %d · %s" % [weapon.attack, element.name], 16, element.color)
-		stats.clip_text = true
-		texts.add_child(stats)
+		texts.add_theme_constant_override("separation", -2)
+		for text in [[Catalog.item_name(item), UI.TEXT], [rarity.name, rarity.color], [Catalog.item_stats(item), element.color if Catalog.is_weapon(item) else UI.GOOD]]:
+			var label := UI.label(text[0], UI.BODY, text[1])
+			label.clip_text = true
+			texts.add_child(label)
 		line.add_child(texts)
 		var buttons := VBoxContainer.new()
-		var equip := UI.button("RETIRER" if equipped else "ÉQUIPER")
-		equip.custom_minimum_size = Vector2(84, 30)
-		equip.disabled = not equipped and Save.equipped.size() >= Catalog.MAX_EQUIPPED
-		equip.pressed.connect(func(): Save.toggle_equipped(weapon.uid); _refresh())
+		var equip := UI.button("Retirer" if equipped else "Équiper", UI.SMALL)
+		equip.custom_minimum_size = Vector2(76, 30)
+		equip.disabled = not equipped and not Save.can_equip(item)
+		equip.pressed.connect(func(): Save.toggle_equipped(item); _refresh())
 		buttons.add_child(equip)
-		var melt := UI.button("FONDRE")
-		melt.custom_minimum_size = Vector2(84, 30)
-		melt.tooltip_text = "Rend 1 %s" % Catalog.MATERIALS[weapon.material].name
-		melt.pressed.connect(func(): _melt(weapon))
+		var melt := UI.button("Fondre", UI.SMALL)
+		melt.custom_minimum_size = Vector2(76, 30)
+		melt.pressed.connect(func(): _melt(item))
 		buttons.add_child(melt)
 		line.add_child(buttons)
 		_list.add_child(row)
 
 
-## Melting a weapon gives one unit of its material back. The album keeps its entry.
-func _melt(weapon: Dictionary) -> void:
-	Save.remove_weapon(weapon.uid)
-	Save.add_material(weapon.material, 1)
-	Sfx.play("metalPot2", 0.7)
+## Melting an item gives one unit of its material back. The album keeps its entry.
+func _melt(item: Dictionary) -> void:
+	Save.remove_item(item.uid)
+	Save.add_material(item.material, 1)
+	Sfx.play("melt")
 	_refresh()

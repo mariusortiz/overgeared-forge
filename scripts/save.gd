@@ -6,14 +6,17 @@ const PATH := "user://save.json"
 signal changed
 
 var materials := {}
-var weapons: Array = []
+## Every forged item, weapon or armour: {uid, plan, material, rarity, score, attack, hp}.
+var items: Array = []
 var equipped: Array = []
+var plans: Array = []
 var album := {}
-var mine_level := 1
+## The deepest floor ever cleared in the mine.
+var best_floor := 0
 var next_uid := 1
 ## With --test on the command line, nothing is read from or written to the disk.
 var volatile := false
-## About the last forged weapon: first of its kind, or its kind's best rarity so far.
+## About the last forged item: first of its kind, or its kind's best rarity so far.
 var last_is_new := false
 var last_is_best := false
 
@@ -27,10 +30,11 @@ func _ready() -> void:
 
 func reset() -> void:
 	materials = Catalog.START_MATERIALS.duplicate()
-	weapons = []
+	items = []
 	equipped = []
+	plans = Catalog.START_PLANS.duplicate()
 	album = {}
-	mine_level = 1
+	best_floor = 0
 	next_uid = 1
 
 
@@ -43,28 +47,40 @@ func add_material(id: String, count: int) -> void:
 	store()
 
 
-func add_weapon(plan: String, material: String, rarity: int, score: float) -> Dictionary:
-	var weapon := {
-		"uid": next_uid, "plan": plan, "material": material, "rarity": rarity,
-		"score": roundi(score), "attack": Catalog.weapon_attack(plan, material, rarity, score),
+func knows(plan: String) -> bool:
+	return plan in plans
+
+
+func learn(plan: String) -> void:
+	if plan != "" and plan not in plans:
+		plans.append(plan)
+		store()
+
+
+func add_item(plan: String, material: String, rarity: int, score: float) -> Dictionary:
+	var value := Catalog.item_value(plan, material, rarity, score)
+	var weapon: bool = Catalog.PLANS[plan].slot == "weapon"
+	var item := {
+		"uid": next_uid, "plan": plan, "material": material, "rarity": rarity, "score": roundi(score),
+		"attack": value if weapon else 0, "hp": 0 if weapon else value,
 	}
 	next_uid += 1
-	weapons.append(weapon)
-	if equipped.size() < Catalog.MAX_EQUIPPED:
-		equipped.append(weapon.uid)
+	items.append(item)
+	if can_equip(item):
+		equipped.append(item.uid)
 	var key := Catalog.album_key(plan, material)
 	last_is_new = not album.has(key)
 	last_is_best = rarity > int(album.get(key, -1))
 	album[key] = maxi(rarity, int(album.get(key, -1)))
 	store()
-	return weapon
+	return item
 
 
-func remove_weapon(uid: int) -> void:
+func remove_item(uid: int) -> void:
 	equipped.erase(uid)
-	for weapon in weapons:
-		if weapon.uid == uid:
-			weapons.erase(weapon)
+	for item in items:
+		if item.uid == uid:
+			items.erase(item)
 			break
 	store()
 
@@ -73,20 +89,36 @@ func is_equipped(uid: int) -> bool:
 	return uid in equipped
 
 
-func toggle_equipped(uid: int) -> void:
-	if uid in equipped:
-		equipped.erase(uid)
-	elif equipped.size() < Catalog.MAX_EQUIPPED:
-		equipped.append(uid)
+## True while the item's slot (three weapons, one armour) still has room.
+func can_equip(item: Dictionary) -> bool:
+	var slot: String = Catalog.PLANS[item.plan].slot
+	return equipped_items(slot).size() < Catalog.SLOT_LIMITS[slot]
+
+
+func toggle_equipped(item: Dictionary) -> void:
+	if item.uid in equipped:
+		equipped.erase(item.uid)
+	elif can_equip(item):
+		equipped.append(item.uid)
 	store()
 
 
-func equipped_weapons() -> Array:
+func equipped_items(slot: String) -> Array:
 	var list := []
 	for uid in equipped:
-		for weapon in weapons:
-			if weapon.uid == uid:
-				list.append(weapon)
+		for item in items:
+			if item.uid == uid and Catalog.PLANS[item.plan].slot == slot:
+				list.append(item)
+	return list
+
+
+## The floors the player may start from: the first, and the one after each boss beaten.
+func start_floors() -> Array:
+	var list := [1]
+	var level := Catalog.BOSS_EVERY
+	while level <= best_floor:
+		list.append(level + 1)
+		level += Catalog.BOSS_EVERY
 	return list
 
 
@@ -98,8 +130,8 @@ func store() -> void:
 	if file == null:
 		return
 	file.store_string(JSON.stringify({
-		"materials": materials, "weapons": weapons, "equipped": equipped,
-		"album": album, "mine_level": mine_level, "next_uid": next_uid,
+		"materials": materials, "items": items, "equipped": equipped, "plans": plans,
+		"album": album, "best_floor": best_floor, "next_uid": next_uid,
 	}))
 
 
@@ -111,16 +143,23 @@ func _load() -> void:
 		return
 	# JSON only knows floats: numbers are turned back into integers.
 	for id in data.get("materials", {}):
-		materials[id] = int(data.materials[id])
-	for saved in data.get("weapons", []):
+		if Catalog.MATERIALS.has(id):
+			materials[id] = int(data.materials[id])
+	# "weapons" is the name the first version gave to the list.
+	for saved in data.get("items", data.get("weapons", [])):
 		if Catalog.PLANS.has(saved.get("plan")) and Catalog.MATERIALS.has(saved.get("material")):
-			weapons.append({
+			items.append({
 				"uid": int(saved.uid), "plan": saved.plan, "material": saved.material,
-				"rarity": int(saved.rarity), "score": int(saved.score), "attack": int(saved.attack),
+				"rarity": int(saved.rarity), "score": int(saved.score),
+				"attack": int(saved.get("attack", 0)), "hp": int(saved.get("hp", 0)),
 			})
+			learn(saved.plan)
 	for uid in data.get("equipped", []):
 		equipped.append(int(uid))
+	for plan in data.get("plans", []):
+		if Catalog.PLANS.has(plan) and plan not in plans:
+			plans.append(plan)
 	for key in data.get("album", {}):
 		album[key] = int(data.album[key])
-	mine_level = int(data.get("mine_level", 1))
+	best_floor = int(data.get("best_floor", 0))
 	next_uid = int(data.get("next_uid", 1))

@@ -51,6 +51,8 @@ func _ready() -> void:
 	_panel = VBoxContainer.new()
 	_panel.add_theme_constant_override("separation", 6)
 	holder.add_child(_panel)
+	if not Save.knows(_plan):
+		_plan = Save.plans[0]
 	if Save.material_count(_material) < Catalog.FORGE_COST:
 		for id in Catalog.MATERIAL_ORDER:
 			if Save.material_count(id) >= Catalog.FORGE_COST:
@@ -72,39 +74,35 @@ func _show_select() -> void:
 	main.lock_tabs(false)
 	_stage.hide_weapon()
 	UI.clear(_panel)
-	_panel.add_child(UI.label("PLAN", 16, UI.DIM))
+	_panel.add_child(UI.label("Plan  (les boss de la mine en donnent de nouveaux)", UI.SMALL, UI.DIM))
 	var plans := HBoxContainer.new()
-	plans.add_theme_constant_override("separation", 4)
+	plans.add_theme_constant_override("separation", 3)
 	_panel.add_child(plans)
 	for id in Catalog.PLAN_ORDER:
+		var known := Save.knows(id)
 		var button := UI.button("")
-		button.custom_minimum_size = Vector2(84, 70)
-		var column := VBoxContainer.new()
-		column.set_anchors_preset(Control.PRESET_FULL_RECT)
-		column.alignment = BoxContainer.ALIGNMENT_CENTER
-		column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		button.custom_minimum_size = Vector2(40, 44)
+		button.disabled = not known
 		var icon := UI.weapon_icon(id, _material, 0, 1)
-		icon.custom_minimum_size = Vector2(48, 48)
-		icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-		column.add_child(icon)
-		var plan_name := UI.label(Catalog.PLANS[id].name, 16)
-		plan_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		column.add_child(plan_name)
-		button.add_child(column)
+		icon.position = Vector2(4, 6)
+		icon.size = Vector2(32, 32)
+		if not known:
+			(icon.material as ShaderMaterial).set_shader_parameter("silhouette", 1.0)
+		button.add_child(icon)
 		UI.highlight(button, id == _plan)
 		button.pressed.connect(func(): _plan = id; _show_select())
 		plans.add_child(button)
 
-	_panel.add_child(UI.label("MATÉRIAU", 16, UI.DIM))
+	_panel.add_child(UI.label("Matériau", UI.SMALL, UI.DIM))
 	var materials := GridContainer.new()
-	materials.columns = 2
-	materials.add_theme_constant_override("h_separation", 4)
-	materials.add_theme_constant_override("v_separation", 4)
+	materials.columns = 3
+	materials.add_theme_constant_override("h_separation", 3)
+	materials.add_theme_constant_override("v_separation", 3)
 	_panel.add_child(materials)
 	for id in Catalog.MATERIAL_ORDER:
 		var count := Save.material_count(id)
-		var button := UI.button("%s  x%d" % [Catalog.MATERIALS[id].name, count])
-		button.custom_minimum_size = Vector2(172, 30)
+		var button := UI.button("%s  %d" % [Catalog.MATERIALS[id].short, count], UI.SMALL)
+		button.custom_minimum_size = Vector2(113, 30)
 		button.disabled = count < Catalog.FORGE_COST
 		button.add_theme_color_override("font_color", Catalog.MATERIALS[id].light)
 		UI.highlight(button, id == _material)
@@ -115,13 +113,16 @@ func _show_select() -> void:
 	var mat: Dictionary = Catalog.MATERIALS[_material]
 	var element: Dictionary = Catalog.ELEMENTS[mat.element]
 	var best: Dictionary = Catalog.RARITIES[mat.max_rarity]
-	var info := UI.label("%s · %s\nRareté max : %s" % [plan.skill.name, element.name, best.name], 16, element.color)
-	info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_panel.add_child(info)
+	var what: String = "%s · %s" % [plan.name, mat.name]
+	if plan.slot == "weapon":
+		what += "\n%s · %s · rareté max %s" % [plan.skill.name, element.name, best.name]
+	else:
+		what += "\nArmure · rareté max %s" % best.name
+	_panel.add_child(UI.centered(what, UI.BODY, element.color))
 
 	var enough := Save.material_count(_material) >= Catalog.FORGE_COST
 	var go := UI.button("FORGER  (%d %s)" % [Catalog.FORGE_COST, mat.name] if enough else "Pas assez de matériaux : va à la mine")
-	go.custom_minimum_size.y = 40
+	go.custom_minimum_size.y = 42
 	go.disabled = not enough
 	go.pressed.connect(_start)
 	_panel.add_child(go)
@@ -132,10 +133,8 @@ func _start() -> void:
 	main.lock_tabs(true)
 	_stage.show_weapon(_plan, _material, Stage.ANVIL + Vector2(0, -44))
 	UI.clear(_panel)
-	_hint = UI.label("", 16)
-	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_hint.custom_minimum_size = Vector2(340, 70)
+	_hint = UI.centered("", UI.BODY, UI.TEXT, 340.0)
+	_hint.custom_minimum_size.y = 76
 	_panel.add_child(_hint)
 	_gauge = Control.new()
 	_gauge.custom_minimum_size = Vector2(340, 130)
@@ -152,7 +151,7 @@ func _begin_heat() -> void:
 	_clock = 0.0
 	_temperature = 0.0
 	_in_band = 0.0
-	_hint.text = "1/3  CHAUFFE\nMaintiens appuyé pour chauffer,\nrelâche pour refroidir. Reste dans la zone !"
+	_hint.text = "1/3  Chauffe\nMaintiens appuyé pour chauffer, relâche pour refroidir. Reste dans la zone dorée !"
 	_stage.move_weapon(Stage.FURNACE + Vector2(26, -6))
 
 
@@ -162,7 +161,7 @@ func _begin_hammer() -> void:
 	_strike_total = 0.0
 	_ring = RING_START
 	_ring_wait = 0.6
-	_hint.text = "2/3  MARTELAGE\nTouche quand le cercle\natteint l'anneau doré."
+	_hint.text = "2/3  Martelage\nTouche quand le cercle blanc atteint l'anneau doré."
 	_stage.move_weapon(Stage.ANVIL + Vector2(0, -44))
 
 
@@ -170,7 +169,7 @@ func _begin_quench() -> void:
 	_state = QUENCH
 	_clock = 0.0
 	_quench_zone = _rng.randf_range(0.25, 0.75)
-	_hint.text = "3/3  TREMPE\nTouche quand le curseur\npasse dans la zone bleue."
+	_hint.text = "3/3  Trempe\nTouche quand le curseur passe dans la zone bleue."
 	_stage.move_weapon(Stage.BARREL + Vector2(0, -52))
 
 
@@ -181,7 +180,9 @@ func _pause(score: float, index: int, next: int) -> void:
 	_after_pause = next
 	_clock = 0.0
 	var word := "Parfait !" if score >= 0.85 else ("Bien" if score >= 0.55 else "Raté")
-	UI.float_text(self, "%s  %d" % [word, roundi(score * 100)], Vector2(180, 70), _grade_color(score), 24)
+	UI.float_text(self, "%s  %d" % [word, roundi(score * 100)], Vector2(180, 70), _grade_color(score), UI.BIG)
+	if index != 2:
+		Sfx.play("gesture_done")
 
 
 func _process(delta: float) -> void:
@@ -221,7 +222,7 @@ func _process(delta: float) -> void:
 				if tapped:
 					score = 1.0 if distance <= QUENCH_ZONE else clampf(1.0 - (distance - QUENCH_ZONE) / 0.3, 0.0, 1.0)
 				_stage.quench()
-				Sfx.play("doorOpen_1", 1.6)
+				Sfx.play("quench")
 				_pause(score, 2, RESULT)
 		PAUSE:
 			if _clock >= 0.9:
@@ -238,7 +239,9 @@ func _hit(accuracy: float) -> void:
 	_strike_total += accuracy
 	_stage.strike(accuracy)
 	_stage.heat = _stage.heat - 0.08
-	Sfx.play(["metalPot1", "metalPot2", "metalPot3"][_strike % 3], 0.9 + accuracy * 0.4)
+	Sfx.play("hammer", 0.85 + accuracy * 0.3)
+	if accuracy >= 0.85:
+		Sfx.play("hammer_perfect")
 	var word := "Parfait !" if accuracy >= 0.85 else ("Bien" if accuracy >= 0.55 else "Raté")
 	UI.float_text(self, word, Vector2(180, 110), _grade_color(accuracy))
 	_ring = RING_START
@@ -292,40 +295,32 @@ func _draw_gauge() -> void:
 			_gauge.draw_rect(bar, UI.EDGE, false, 2.0)
 
 
-# --- The finished weapon ---------------------------------------------------
+# --- The finished item -----------------------------------------------------
 
 func _show_result() -> void:
 	_state = RESULT
 	var score: float = (_scores[0] + _scores[1] + _scores[2]) / 3.0 * 100.0
 	var rarity := Catalog.roll_rarity(score, _material, _rng)
-	var weapon := Save.add_weapon(_plan, _material, rarity, score)
+	var item := Save.add_item(_plan, _material, rarity, score)
 	var info: Dictionary = Catalog.RARITIES[rarity]
 	_stage.reveal(_material, rarity)
-	Sfx.play("handleCoins" if rarity >= 3 else "metalLatch", 1.0 + rarity * 0.05)
+	Sfx.play("rarity_%d" % rarity)
 	_gauge = null
 	UI.clear(_panel)
 
-	var title := UI.label(info.name.to_upper(), 32, info.color)
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_panel.add_child(title)
-	var name_label := UI.label(Catalog.weapon_name(weapon), 16)
-	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_panel.add_child(name_label)
-	var lines := "Attaque %d\nNote %d / 100\nChauffe %d · Martelage %d · Trempe %d" % [
-		weapon.attack, roundi(score), roundi(_scores[0] * 100), roundi(_scores[1] * 100), roundi(_scores[2] * 100)]
-	var stats := UI.label(lines, 16, UI.DIM)
-	stats.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_panel.add_child(stats)
+	_panel.add_child(UI.centered(info.name.to_upper(), UI.BIG, info.color))
+	_panel.add_child(UI.centered(Catalog.item_name(item)))
+	var lines := "%s\nNote %d / 100\nChauffe %d · Martelage %d · Trempe %d" % [
+		Catalog.item_stats(item), roundi(score), roundi(_scores[0] * 100), roundi(_scores[1] * 100), roundi(_scores[2] * 100)]
+	_panel.add_child(UI.centered(lines, UI.SMALL, UI.DIM))
 	var note := ""
 	if Save.last_is_new:
-		note = "Nouvelle arme dans l'album !"
+		note = "Nouveau dans l'album !"
 	elif Save.last_is_best:
-		note = "Meilleure rareté pour cette arme !"
+		note = "Meilleure rareté pour cet objet !"
 	elif rarity == Catalog.MATERIALS[_material].max_rarity:
 		note = "Rareté maximale pour ce matériau."
-	var note_label := UI.label(note, 16, UI.GOLD)
-	note_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_panel.add_child(note_label)
+	_panel.add_child(UI.centered(note, UI.SMALL, UI.GOLD))
 
 	var again := UI.button("FORGER ENCORE")
 	again.custom_minimum_size.y = 40
@@ -336,7 +331,7 @@ func _show_result() -> void:
 	mine.pressed.connect(func(): main.open("combat"))
 	_panel.add_child(mine)
 	main.lock_tabs(false)
-	print("FORGE %s score=%d rarity=%s attack=%d" % [Catalog.weapon_name(weapon), roundi(score), info.name, weapon.attack])
+	print("FORGE %s score=%d rarity=%s %s" % [Catalog.item_name(item), roundi(score), info.name, Catalog.item_stats(item)])
 	if main.auto and Save.material_count(_material) >= Catalog.FORGE_COST:
 		get_tree().create_timer(1.5).timeout.connect(_start)
 

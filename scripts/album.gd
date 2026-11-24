@@ -1,53 +1,63 @@
 extends Control
-## The album: one square for each plan and material, with the best rarity forged so far.
+## The album: one square for each plan (lines) and material (columns), with the
+## best rarity forged so far.
+
+const CELL := 55.0
 
 var main: Control
+var _caption: Label
 
 
 func _ready() -> void:
 	var total := Catalog.PLAN_ORDER.size() * Catalog.MATERIAL_ORDER.size()
-	var title := UI.label("ALBUM  %d/%d" % [Save.album.size(), total], 16, UI.GOLD)
-	title.position = Vector2(8, 6)
+	var title := UI.label("Album  %d/%d  ·  Plans  %d/%d" % [Save.album.size(), total, Save.plans.size(), Catalog.PLAN_ORDER.size()], UI.BODY, UI.GOLD)
+	title.position = Vector2(8, 4)
 	add_child(title)
 
 	var grid := GridContainer.new()
 	grid.columns = Catalog.MATERIAL_ORDER.size()
-	grid.position = Vector2(6, 34)
-	grid.add_theme_constant_override("h_separation", 4)
-	grid.add_theme_constant_override("v_separation", 4)
+	grid.position = Vector2(6, 32)
+	grid.add_theme_constant_override("h_separation", 3)
+	grid.add_theme_constant_override("v_separation", 3)
 	add_child(grid)
 	for plan in Catalog.PLAN_ORDER:
 		for material in Catalog.MATERIAL_ORDER:
 			var best := int(Save.album.get(Catalog.album_key(plan, material), -1))
 			var found := best >= 0
-			var cell := UI.panel(UI.PANEL, Catalog.RARITIES[best].color if found else UI.PANEL_LIGHT)
-			cell.custom_minimum_size = Vector2(84, 104)
-			var column := VBoxContainer.new()
-			column.alignment = BoxContainer.ALIGNMENT_CENTER
-			column.add_theme_constant_override("separation", 2)
-			cell.add_child(column)
-			var icon := UI.weapon_icon(plan, material, maxi(best, 0), 2)
-			icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+			var cell := Button.new()
+			cell.focus_mode = Control.FOCUS_NONE
+			cell.custom_minimum_size = Vector2(CELL, CELL)
+			var style := UI.box(UI.PANEL, Catalog.RARITIES[best].color if found else UI.PANEL_LIGHT)
+			for state in ["normal", "hover", "pressed"]:
+				cell.add_theme_stylebox_override(state, style)
+			var icon := UI.weapon_icon(plan, material, maxi(best, 0), 1)
+			icon.position = Vector2((CELL - 32) / 2.0, 5)
+			icon.size = Vector2(32, 32)
 			if not found:
 				(icon.material as ShaderMaterial).set_shader_parameter("silhouette", 1.0)
-			column.add_child(icon)
+			cell.add_child(icon)
 			# One pip for each rarity; those reached are lit.
-			var pips := HBoxContainer.new()
-			pips.alignment = BoxContainer.ALIGNMENT_CENTER
-			pips.add_theme_constant_override("separation", 2)
 			for rarity in Catalog.RARITIES.size():
 				var pip := ColorRect.new()
-				pip.custom_minimum_size = Vector2(8, 8)
+				pip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				pip.position = Vector2(5 + rarity * 7.5, CELL - 12)
+				pip.size = Vector2(6, 6)
 				pip.color = Catalog.RARITIES[rarity].color if rarity <= best else UI.PANEL_LIGHT
-				pips.add_child(pip)
-			column.add_child(pips)
-			var caption := UI.label(Catalog.RARITIES[best].name if found else "?", 16, Catalog.RARITIES[best].color if found else UI.DIM)
-			caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			caption.clip_text = true
-			column.add_child(caption)
-			cell.tooltip_text = "%s · %s" % [Catalog.PLANS[plan].name, Catalog.MATERIALS[material].name]
+				cell.add_child(pip)
+			cell.pressed.connect(_describe.bind(plan, material, best))
 			grid.add_child(cell)
 
-	var legend := UI.label("Lignes : épée, dague, lance, hache.\nColonnes : fer, acier ardent,\ngivre-argent, orichalque bleu.", 16, UI.DIM)
-	legend.position = Vector2(8, 484)
-	add_child(legend)
+	_caption = UI.centered("Touche une case pour voir de quoi il s'agit.", UI.BODY, UI.DIM, 348.0)
+	_caption.position = Vector2(6, 500)
+	add_child(_caption)
+
+
+func _describe(plan: String, material: String, best: int) -> void:
+	var text := "%s · %s" % [Catalog.PLANS[plan].name if Save.knows(plan) else "Plan inconnu", Catalog.MATERIALS[material].name]
+	if best >= 0:
+		_caption.text = "%s\nMeilleure rareté : %s" % [text, Catalog.RARITIES[best].name]
+		_caption.add_theme_color_override("font_color", Catalog.RARITIES[best].color)
+	else:
+		_caption.text = text + "\n" + ("Pas encore forgé" if Save.knows(plan) else "Bats les boss de la mine pour trouver ce plan")
+		_caption.add_theme_color_override("font_color", UI.DIM)
+	Sfx.play("click")

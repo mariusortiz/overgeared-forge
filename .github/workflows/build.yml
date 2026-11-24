@@ -64,15 +64,19 @@ jobs:
 
       - name: Smoke test (fails on script errors)
         run: |
-          # Every screen, then the game playing by itself: forges, and a whole run in the mine.
+          # Every screen, then the game playing by itself: forges, and runs in the mine
+          # (a strong set, a beginner's set, and no weapon at all).
           for screen in forge combat armory album; do
             godot --headless --fixed-fps 60 --quit-after 120 -- --test --demo --screen=$screen 2>&1 | tee -a run.log
           done
           godot --headless --fixed-fps 60 --quit-after 2400 -- --test --auto --screen=forge 2>&1 | tee -a run.log
-          godot --headless --fixed-fps 60 --quit-after 3600 -- --test --demo --auto --screen=combat 2>&1 | tee -a run.log
+          godot --headless --fixed-fps 60 --quit-after 9000 -- --test --demo --auto --deep --screen=combat 2>&1 | tee -a run.log
           godot --headless --fixed-fps 60 --quit-after 3600 -- --test --basic --auto --screen=combat 2>&1 | tee -a run.log
+          godot --headless --fixed-fps 60 --quit-after 3600 -- --test --auto --screen=combat 2>&1 | tee -a run.log
           grep -q "^FORGE " run.log
-          grep -q "^COMBAT .*won=true" run.log
+          # The strong set goes past the second boss; a beginner clears at least one floor.
+          grep -qE "^MINE .*cleared=1[0-9] result=beaten" run.log
+          test "$(grep -cE "^MINE .*cleared=[1-9]" run.log)" -ge 2
           # "still in use at exit" only reports what --quit-after interrupts.
           if grep -E "SCRIPT ERROR|Parse Error|^ERROR:" run.log | grep -v "still in use at exit"; then exit 1; fi
 

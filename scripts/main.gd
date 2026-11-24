@@ -3,10 +3,13 @@ extends Control
 ##
 ## Command line, after "--":
 ##   --screen=forge|combat|armory|album   opens on that screen
-##   --auto      the game plays by itself (forge gestures, combat choices)
+##   --auto      the game plays by itself (forge gestures, combat choices; it
+##               leaves the mine when its hit points get low)
 ##   --demo      starts with a few weapons and materials
-##   --basic     starts with three average iron weapons
-##   --loop      with --auto, goes back into the mine after each victory
+##   --basic     starts with what six iron give: two average iron weapons
+##   --mid       starts with a mid-game set (elemental weapons, a shield)
+##   --floor=6   with --auto, the floor the mine is entered at
+##   --deep      with --auto, never leaves the mine: goes down until beaten
 ##   --test      does not read or write the save file
 ##   --capture=/path.png [--delay=2]   saves a picture of the window, then quits
 
@@ -36,12 +39,19 @@ func _ready() -> void:
 	auto = options.has("auto")
 	if options.has("demo"):
 		_fill_demo()
+	if options.has("mid"):
+		Save.materials = {"iron": 0}
+		Save.plans = ["sword", "dagger", "spear", "shield"]
+		Save.best_floor = 5
+		Save.add_item("sword", "ember", 2, 70)
+		Save.add_item("dagger", "frost", 2, 70)
+		Save.add_item("spear", "storm", 2, 70)
+		Save.add_item("shield", "iron", 2, 70)
 	if options.has("basic"):
 		# What a new player owns after three average forges.
 		Save.materials = {"iron": 0}
-		Save.add_weapon("sword", "iron", 1, 60)
-		Save.add_weapon("dagger", "iron", 1, 60)
-		Save.add_weapon("spear", "iron", 1, 60)
+		Save.add_item("sword", "iron", 1, 60)
+		Save.add_item("dagger", "iron", 1, 60)
 
 	var background := ColorRect.new()
 	background.color = UI.INK
@@ -54,7 +64,7 @@ func _ready() -> void:
 	add_child(top)
 	_chips = HBoxContainer.new()
 	_chips.alignment = BoxContainer.ALIGNMENT_CENTER
-	_chips.add_theme_constant_override("separation", 22)
+	_chips.add_theme_constant_override("separation", 16)
 	top.add_child(_chips)
 
 	_content = Control.new()
@@ -115,10 +125,14 @@ func _refresh_chips() -> void:
 
 
 func _fill_demo() -> void:
-	Save.materials = {"iron": 12, "ember": 7, "frost": 5, "orichalcum": 3}
-	Save.add_weapon("sword", "ember", 3, 84)
-	Save.add_weapon("spear", "frost", 2, 71)
-	Save.add_weapon("axe", "orichalcum", 4, 93)
-	Save.add_weapon("dagger", "iron", 1, 58)
-	Save.add_weapon("sword", "iron", 0, 31)
-	Save.add_weapon("dagger", "orichalcum", 5, 97)
+	Save.materials = {"iron": 12, "ember": 7, "frost": 5, "storm": 4, "mithril": 3, "orichalcum": 3}
+	Save.plans = ["sword", "dagger", "spear", "shield", "axe", "plate"]
+	Save.best_floor = 12
+	Save.add_item("sword", "ember", 3, 84)
+	Save.add_item("spear", "frost", 2, 71)
+	Save.add_item("axe", "orichalcum", 4, 93)
+	Save.add_item("plate", "mithril", 3, 80)
+	Save.add_item("dagger", "iron", 1, 58)
+	Save.add_item("sword", "iron", 0, 31)
+	Save.add_item("shield", "storm", 2, 66)
+	Save.add_item("dagger", "orichalcum", 5, 97)
