@@ -76,6 +76,14 @@ func add_item(plan: String, material: String, rarity: int, score: float) -> Dict
 	return item
 
 
+func capacity() -> int:
+	return Catalog.inventory_size(best_floor)
+
+
+func is_full() -> bool:
+	return items.size() >= capacity()
+
+
 func remove_item(uid: int) -> void:
 	equipped.erase(uid)
 	for item in items:

@@ -66,7 +66,7 @@ func _ready() -> void:
 				_material = id
 				break
 	_show_select()
-	if main.auto and Save.material_count(_material) >= Catalog.FORGE_COST:
+	if main.auto and Save.material_count(_material) >= Catalog.FORGE_COST and not Save.is_full():
 		_start.call_deferred()
 
 
@@ -129,8 +129,10 @@ func _show_select() -> void:
 
 	var enough := Save.material_count(_material) >= Catalog.FORGE_COST
 	var go := UI.button("FORGER  (%d %s)" % [Catalog.FORGE_COST, mat.name] if enough else "Pas assez de matériaux : pars en expédition")
+	if Save.is_full():
+		go.text = "Inventaire plein (%d) : fonds un objet" % Save.capacity()
 	go.custom_minimum_size.y = 42
-	go.disabled = not enough
+	go.disabled = not enough or Save.is_full()
 	go.pressed.connect(_start)
 	_panel.add_child(go)
 
@@ -365,7 +367,7 @@ func _show_result() -> void:
 	_panel.add_child(mine)
 	main.lock_tabs(false)
 	print("FORGE %s score=%d rarity=%s %s" % [Catalog.item_name(item), roundi(score), info.name, Catalog.item_stats(item)])
-	if main.auto and Save.material_count(_material) >= Catalog.FORGE_COST:
+	if main.auto and Save.material_count(_material) >= Catalog.FORGE_COST and not Save.is_full():
 		get_tree().create_timer(1.5).timeout.connect(_start)
 
 

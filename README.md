@@ -32,7 +32,7 @@ La moyenne des trois gestes donne une note sur 100. La rareté dépend de cette 
 | Unique | 84 | au moins 65 |
 | Légendaire | 93 | au moins 80 |
 
-La note bouge de 4 points au hasard, et le matériau fixe la rareté maximale. L'orichalque bleu, forgé à 96 ou plus sans geste sous 90, a une chance sur cinq de donner un objet Mythique. À rareté égale, une meilleure note donne un objet un peu plus fort ; elle est affichée dans l'écran Armes.
+La note bouge de 4 points au hasard, et le matériau fixe la rareté maximale. L'orichalque bleu, forgé à 96 ou plus sans geste sous 90, a une chance sur cinq de donner un objet Mythique. À rareté égale, une meilleure note donne un objet un peu plus fort ; elle est affichée dans l'inventaire.
 
 | Matériau | Élément | Rareté max | Où le trouver |
 |---|---|---|---|
@@ -57,7 +57,18 @@ Chaque ennemi battu laisse un matériau, meilleur à mesure qu'on avance. Après
 
 Si Grid est battu, le butin porté est perdu. Chaque boss battu donne un nouveau plan (lance, bouclier, hache, plastron, marteau, faux), gardé quoi qu'il arrive, et permet de repartir directement de l'étape suivante.
 
-**Armes.** Équipe trois armes et une armure, fonds le reste pour récupérer un peu de matériau. Ce que Grid équipe se voit sur lui : il commence en T-shirt blanc, porte le plastron ou le bouclier forgé (aux couleurs de son matériau), garde ses deux autres armes dans le dos en expédition, et les accroche au mur de l'atelier. Sans arme, Grid se bat avec son marteau de forge : on n'est jamais bloqué.
+**Inventaire.** Grid garde 8 objets au plus, équipés compris, et un de plus par boss battu (jusqu'à 14). Quand l'inventaire est plein, il faut fondre un objet avant de forger. Fondre rend des matériaux, meilleurs si l'objet est rare :
+
+| Rareté de l'objet fondu | Ce qu'on récupère |
+|---|---|
+| Normal, Rare | 1 unité de son matériau |
+| Épique | 2 unités de son matériau |
+| Unique | 1 unité de son matériau et 1 d'un matériau supérieur |
+| Légendaire, Mythique | 1 unité de son matériau et 2 d'un matériau supérieur |
+
+Le matériau supérieur des trois élémentaires est le mithril, celui du mithril est l'orichalque bleu. Chaque objet affiche ce que sa fonte rendrait.
+
+Équipe trois armes et une armure. Ce que Grid équipe se voit sur lui : il commence en T-shirt blanc, porte le plastron ou le bouclier forgé (aux couleurs de son matériau), garde ses deux autres armes dans le dos en expédition, et les accroche au mur de l'atelier. Sans arme, Grid se bat avec son marteau de forge : on n'est jamais bloqué.
 
 **Album.** Une case par plan et par matériau (48), avec la meilleure rareté forgée.
 
@@ -70,7 +81,7 @@ Tout le contenu est dans [data/catalog.gd](data/catalog.gd) : raretés, matéria
 | `scripts/forge.gd`, `scripts/forge_stage.gd` | Les trois gestes et l'atelier |
 | `scripts/combat.gd` | L'expédition |
 | `scripts/actor.gd` | Un personnage animé, avec son arme en main |
-| `scripts/armory.gd`, `scripts/album.gd` | Les armes et l'album |
+| `scripts/armory.gd`, `scripts/album.gd` | L'inventaire et l'album |
 | `scripts/save.gd` | La sauvegarde (`user://save.json`) |
 | `scripts/ui.gd` | Couleurs, boutons, images d'armes |
 

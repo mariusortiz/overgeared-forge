@@ -1,6 +1,6 @@
 extends Control
-## What the player owns: equip up to three weapons and one armour, melt the rest
-## back into material.
+## The inventory: a limited number of items. Equip up to three weapons and one
+## armour, melt the rest back into material.
 
 var main: Control
 var _list: VBoxContainer
@@ -25,9 +25,11 @@ func _ready() -> void:
 
 func _refresh() -> void:
 	UI.clear(_list)
-	_title.text = "Armes %d/%d  ·  Armure %d/%d" % [
+	_title.text = "Inventaire %d/%d  ·  Armes %d/%d  ·  Armure %d/%d" % [
+		Save.items.size(), Save.capacity(),
 		Save.equipped_items("weapon").size(), Catalog.SLOT_LIMITS.weapon,
 		Save.equipped_items("armor").size(), Catalog.SLOT_LIMITS.armor]
+	_title.add_theme_color_override("font_color", UI.BAD if Save.is_full() else UI.GOLD)
 	if Save.items.is_empty():
 		_list.add_child(UI.label("\nRien pour l'instant.\nVa à la forge !", UI.BODY, UI.DIM))
 		return
@@ -53,6 +55,7 @@ func _refresh() -> void:
 			var label := UI.label(text[0], UI.BODY, text[1])
 			label.clip_text = true
 			texts.add_child(label)
+		texts.add_child(UI.label("Fonte : " + Catalog.materials_text(Catalog.melt_yield(item)), UI.SMALL, UI.DIM))
 		line.add_child(texts)
 		var buttons := VBoxContainer.new()
 		var equip := UI.button("Retirer" if equipped else "Équiper", UI.SMALL)
@@ -68,9 +71,13 @@ func _refresh() -> void:
 		_list.add_child(row)
 
 
-## Melting an item gives one unit of its material back. The album keeps its entry.
+## Melting an item gives materials back, finer ones for a high rarity (see MELT
+## in data/catalog.gd). The album keeps its entry.
 func _melt(item: Dictionary) -> void:
+	var gained := Catalog.melt_yield(item)
 	Save.remove_item(item.uid)
-	Save.add_material(item.material, 1)
+	for id in gained:
+		Save.add_material(id, gained[id])
+	UI.float_text(self, "+ " + Catalog.materials_text(gained), Vector2(180, 60), UI.GOLD)
 	Sfx.play("melt")
 	_refresh()

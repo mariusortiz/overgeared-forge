@@ -20,19 +20,20 @@ const ELEMENTS := {
 }
 
 ## max_rarity: the best rarity this material can reach (index in RARITIES).
+## better: the finer materials a high-rarity item of this one can give when melted.
 ## dark and light: the colours the metal of a weapon takes.
 const MATERIALS := {
-	"iron": {"name": "Fer", "short": "Fer", "element": "none", "power": 1.0, "max_rarity": 2,
+	"iron": {"better": ["ember", "frost", "storm"], "name": "Fer", "short": "Fer", "element": "none", "power": 1.0, "max_rarity": 2,
 		"dark": Color("55566a"), "light": Color("e7f0f4")},
-	"ember": {"name": "Acier ardent", "short": "Ardent", "element": "fire", "power": 1.25, "max_rarity": 3,
+	"ember": {"better": ["mithril"], "name": "Acier ardent", "short": "Ardent", "element": "fire", "power": 1.25, "max_rarity": 3,
 		"dark": Color("6e2a1e"), "light": Color("ffc078")},
-	"frost": {"name": "Givre-argent", "short": "Givre", "element": "ice", "power": 1.25, "max_rarity": 3,
+	"frost": {"better": ["mithril"], "name": "Givre-argent", "short": "Givre", "element": "ice", "power": 1.25, "max_rarity": 3,
 		"dark": Color("2f5f86"), "light": Color("e2fbff")},
-	"storm": {"name": "Pierre d'orage", "short": "Orage", "element": "lightning", "power": 1.25, "max_rarity": 3,
+	"storm": {"better": ["mithril"], "name": "Pierre d'orage", "short": "Orage", "element": "lightning", "power": 1.25, "max_rarity": 3,
 		"dark": Color("4a2a80"), "light": Color("e6ccff")},
-	"mithril": {"name": "Mithril", "short": "Mithril", "element": "none", "power": 1.6, "max_rarity": 4,
+	"mithril": {"better": ["orichalcum"], "name": "Mithril", "short": "Mithril", "element": "none", "power": 1.6, "max_rarity": 4,
 		"dark": Color("2f6a62"), "light": Color("e6fff4")},
-	"orichalcum": {"name": "Orichalque bleu", "short": "Orichalque", "element": "lightning", "power": 2.0, "max_rarity": 4,
+	"orichalcum": {"better": ["orichalcum"], "name": "Orichalque bleu", "short": "Orichalque", "element": "lightning", "power": 2.0, "max_rarity": 4,
 		"dark": Color("2a2f9a"), "light": Color("9fd0ff")},
 }
 const MATERIAL_ORDER := ["iron", "ember", "frost", "storm", "mithril", "orichalcum"]
@@ -75,6 +76,15 @@ const RARITY_LUCK := 4.0
 ## Mythic: [lowest note, lowest note for the weakest gesture, chances].
 const MYTH_RULE := [96, 90, 0.2]
 const SLOT_LIMITS := {"weapon": 3, "armor": 1}
+
+## How many items Grid can keep, equipped ones included: a base, plus one for
+## each boss beaten, up to a maximum. Beyond that, something must be melted.
+const INVENTORY_BASE := 8
+const INVENTORY_PER_BOSS := 1
+const INVENTORY_MAX := 14
+## What melting an item gives back, by rarity: [units of its material, units of a
+## better material]. Never more than the three units the forge took.
+const MELT := [[1, 0], [1, 0], [2, 0], [1, 1], [1, 2], [1, 2]]
 
 const HERO_NAME := "Grid"
 const HERO_SPRITE := "grid"
@@ -193,6 +203,31 @@ static func item_stats(item: Dictionary) -> String:
 
 static func item_element(item: Dictionary) -> String:
 	return MATERIALS[item.material].element
+
+
+static func inventory_size(best_floor: int) -> int:
+	@warning_ignore("integer_division")
+	return mini(INVENTORY_BASE + best_floor / BOSS_EVERY * INVENTORY_PER_BOSS, INVENTORY_MAX)
+
+
+## The materials melting an item gives: {material: units}.
+static func melt_yield(item: Dictionary) -> Dictionary:
+	var line: Array = MELT[item.rarity]
+	var result := {item.material: line[0]}
+	if line[1] > 0:
+		var options: Array = MATERIALS[item.material].better
+		var better: String = options[item.uid % options.size()]
+		result[better] = int(result.get(better, 0)) + line[1]
+	return result
+
+
+## A list of materials as a sentence: "Fer 2, Mithril 1".
+static func materials_text(amounts: Dictionary) -> String:
+	var parts := []
+	for id in MATERIAL_ORDER:
+		if int(amounts.get(id, 0)) > 0:
+			parts.append("%s %d" % [MATERIALS[id].short, amounts[id]])
+	return "rien" if parts.is_empty() else ", ".join(parts)
 
 
 static func album_key(plan: String, material: String) -> String:

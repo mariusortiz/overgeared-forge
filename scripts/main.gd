@@ -21,7 +21,7 @@ const SCREENS := {
 	"album": preload("res://scripts/album.gd"),
 }
 const Title := preload("res://scripts/title.gd")
-const TABS := [["forge", "FORGE"], ["combat", "EXPÉDITION"], ["armory", "ARMES"], ["album", "ALBUM"]]
+const TABS := [["forge", "FORGE"], ["combat", "EXPÉDITION"], ["armory", "INVENTAIRE"], ["album", "ALBUM"]]
 const TOP := 36.0
 const BOTTOM := 56.0
 
