@@ -21,6 +21,7 @@ var _furnace_glow: Sprite2D
 var _fire: Sprite2D
 var _fire_atlas: AtlasTexture
 var _hero: Actor
+var _trophies: Node2D
 var _time := 0.0
 var _shake := 0.0
 
@@ -61,10 +62,10 @@ func _ready() -> void:
 	embers.color = Color(1.0, 0.7, 0.25)
 	add_child(embers)
 
-	_hero = Actor.make(Catalog.HERO_SPRITE, true, 2.0)
-	_hero.position = Vector2(262, 172)
-	_hero.hold(UI.picture("hammer1"), UI.weapon_material("iron", 0))
-	add_child(_hero)
+	_trophies = Node2D.new()
+	add_child(_trophies)
+	_dress()
+	Save.changed.connect(_dress)
 
 	_weapon_glow = _glow(Color(1.0, 0.6, 0.2, 0.0), 150.0)
 	add_child(_weapon_glow)
@@ -72,6 +73,28 @@ func _ready() -> void:
 	_weapon.scale = Vector2(WEAPON_ZOOM, WEAPON_ZOOM)
 	_weapon.visible = false
 	add_child(_weapon)
+
+
+## Grid in the armour he has equipped, and his equipped weapons hung on the wall
+## behind him. Called again each time the save changes.
+func _dress() -> void:
+	if _hero:
+		_hero.queue_free()
+	_hero = Actor.make_hero(true, 2.0)
+	_hero.position = Vector2(262, 172)
+	_hero.hold(UI.picture("hammer1"), UI.weapon_material("iron", 0))
+	add_child(_hero)
+	move_child(_hero, _trophies.get_index() + 1)
+	for child in _trophies.get_children():
+		child.queue_free()
+	var weapons := Save.equipped_items("weapon")
+	for index in weapons.size():
+		var trophy := Sprite2D.new()
+		trophy.texture = UI.weapon_texture(weapons[index].plan)
+		trophy.material = UI.weapon_material(weapons[index].material, weapons[index].rarity)
+		trophy.scale = Vector2(2, 2)
+		trophy.position = Vector2(170 + index * 62, 36)
+		_trophies.add_child(trophy)
 
 
 func _process(delta: float) -> void:

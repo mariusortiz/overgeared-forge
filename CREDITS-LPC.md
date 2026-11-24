@@ -71,6 +71,14 @@ Fichier généré : ne pas le modifier à la main.
 - https://opengameart.org/content/lpc-clothes-and-hair
 - https://opengameart.org/content/lpc-expanded-socks-shoes
 
+## `feet/shoes/basic/male`
+
+- Auteurs : JaidynReiman,bluecarrot16,Johannes Sjölund (wulax)
+- Licences : OGA-BY 3.0,CC-BY-SA 3.0,GPL 3.0
+- https://opengameart.org/content/lpc-medieval-fantasy-character-sprites
+- http://opengameart.org/content/lpc-clothing-updates
+- https://opengameart.org/content/lpc-expanded-socks-shoes
+
 ## `hair/long/adult`, `hair/messy1/adult`
 
 - Auteurs : JaidynReiman,Manuel Riecke (MrBeast)
@@ -196,6 +204,15 @@ Fichier généré : ne pas le modifier à la main.
 - Licences : OGA-BY 3.0,CC-BY-SA 3.0,GPL 3.0
 - https://opengameart.org/content/lpc-medieval-fantasy-character-sprites
 - http://opengameart.org/content/lpc-clothing-updates
+- https://opengameart.org/content/lpc-revised-character-basics
+- https://github.com/ElizaWy/LPC/tree/main/Characters/Clothing
+- https://opengameart.org/content/lpc-expanded-sit-run-jump-more
+- https://opengameart.org/content/lpc-expanded-simple-shirts
+
+## `torso/clothes/shortsleeve/tshirt/male`
+
+- Auteurs : ElizaWy,JaidynReiman,Stephen Challener (Redshrike),Johannes Sjölund (wulax)
+- Licences : OGA-BY 3.0
 - https://opengameart.org/content/lpc-revised-character-basics
 - https://github.com/ElizaWy/LPC/tree/main/Characters/Clothing
 - https://opengameart.org/content/lpc-expanded-sit-run-jump-more

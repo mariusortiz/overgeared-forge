@@ -40,6 +40,8 @@ const MATERIAL_ORDER := ["iron", "ember", "frost", "storm", "mithril", "orichalc
 const MYTH_MATERIAL := "orichalcum"
 
 ## Weapons have an attack and a skill; armours have hit points and may block.
+## worn: a sheet of assets/lpc drawn over Grid when he wears the armour; without
+## it, the armour's picture is shown on his arm, like a shield.
 ## Skill kinds: "single" one enemy, "double" two hits, "all" every enemy,
 ## "stun" the enemy misses its next attack, "drain" half the damage heals Grid.
 const PLANS := {
@@ -52,7 +54,7 @@ const PLANS := {
 	"shield": {"name": "Bouclier", "slot": "armor", "sprite": "shield", "hp": 12, "block": 0.15},
 	"axe": {"name": "Hache", "slot": "weapon", "sprite": "axe3", "attack": 14,
 		"skill": {"name": "Fendoir", "kind": "single", "power": 3.0, "cooldown": 4}},
-	"plate": {"name": "Plastron", "slot": "armor", "sprite": "plate", "hp": 25, "block": 0.0},
+	"plate": {"name": "Plastron", "slot": "armor", "sprite": "plate", "hp": 25, "block": 0.0, "worn": "armor_plate"},
 	"hammer": {"name": "Marteau", "slot": "weapon", "sprite": "hammer1", "attack": 13,
 		"skill": {"name": "Choc", "kind": "stun", "power": 1.5, "cooldown": 3}},
 	"scythe": {"name": "Faux", "slot": "weapon", "sprite": "scythe1", "attack": 12,

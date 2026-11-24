@@ -57,7 +57,7 @@ Chaque ennemi battu laisse un matériau, meilleur à mesure qu'on avance. Après
 
 Si Grid est battu, le butin porté est perdu. Chaque boss battu donne un nouveau plan (lance, bouclier, hache, plastron, marteau, faux), gardé quoi qu'il arrive, et permet de repartir directement de l'étape suivante.
 
-**Armes.** Équipe trois armes et une armure, fonds le reste pour récupérer un peu de matériau. Sans arme, Grid se bat avec son marteau de forge : on n'est jamais bloqué.
+**Armes.** Équipe trois armes et une armure, fonds le reste pour récupérer un peu de matériau. Ce que Grid équipe se voit sur lui : il commence en T-shirt blanc, porte le plastron ou le bouclier forgé (aux couleurs de son matériau), garde ses deux autres armes dans le dos en expédition, et les accroche au mur de l'atelier. Sans arme, Grid se bat avec son marteau de forge : on n'est jamais bloqué.
 
 **Album.** Une case par plan et par matériau (48), avec la meilleure rareté forgée.
 

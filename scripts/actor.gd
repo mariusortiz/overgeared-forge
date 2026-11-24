@@ -1,7 +1,8 @@
 class_name Actor
 extends Node2D
 ## A character drawn from a sheet of assets/lpc (made by tools/build_lpc.py):
-## it breathes, swings the weapon it holds, and falls.
+## it breathes, swings the weapon it holds, and falls. Grid also shows the armour
+## he wears and the other weapons he carries.
 
 const SIZE := 64
 ## Columns of the sheet: [first frame, number of frames].
@@ -19,6 +20,9 @@ var facing_left := false
 var _body: Sprite2D
 var _atlas: AtlasTexture
 var _weapon: Sprite2D
+var _overlay_atlas: AtlasTexture
+var _shield: Sprite2D
+var _back: Node2D
 var _animation := IDLE
 var _time := 0.0
 var _fallen := false
@@ -28,6 +32,8 @@ static func make(character: String, left: bool, zoom: float) -> Actor:
 	var actor := Actor.new()
 	actor.facing_left = left
 	actor.scale = Vector2(zoom, zoom)
+	actor._back = Node2D.new()
+	actor.add_child(actor._back)
 	actor._atlas = AtlasTexture.new()
 	actor._atlas.atlas = load("res://assets/lpc/%s.png" % character)
 	actor._body = Sprite2D.new()
@@ -42,6 +48,59 @@ static func make(character: String, left: bool, zoom: float) -> Actor:
 	actor.add_child(actor._weapon)
 	actor._show_frame(0)
 	return actor
+
+
+## Grid as the save describes him: wearing the armour he has equipped.
+static func make_hero(left: bool, zoom: float) -> Actor:
+	var hero := make(Catalog.HERO_SPRITE, left, zoom)
+	for armor in Save.equipped_items("armor"):
+		var shader := UI.weapon_material(armor.material, armor.rarity)
+		var plan: Dictionary = Catalog.PLANS[armor.plan]
+		if plan.has("worn"):
+			hero.wear(plan.worn, shader)
+		else:
+			hero.raise_shield(UI.weapon_texture(armor.plan), shader)
+	return hero
+
+
+## Draws another sheet over the body (an armour), frame for frame.
+func wear(sheet: String, shader: Material = null) -> void:
+	_overlay_atlas = AtlasTexture.new()
+	_overlay_atlas.atlas = load("res://assets/lpc/%s.png" % sheet)
+	_overlay_atlas.region = _atlas.region
+	var overlay := Sprite2D.new()
+	overlay.texture = _overlay_atlas
+	overlay.material = shader
+	add_child(overlay)
+	move_child(overlay, _body.get_index() + 1)
+
+
+## Shows a small picture on the arm away from the weapon.
+func raise_shield(texture: Texture2D, shader: Material = null) -> void:
+	_shield = Sprite2D.new()
+	_shield.texture = texture
+	_shield.material = shader
+	_shield.scale = Vector2(0.55, 0.55)
+	_shield.position = Vector2(4 if facing_left else -4, 10)
+	add_child(_shield)
+	move_child(_shield, _weapon.get_index())
+
+
+## Shows weapons carried on the back: a list of [texture, shader].
+func carry(weapons: Array) -> void:
+	for child in _back.get_children():
+		child.queue_free()
+	for index in weapons.size():
+		var sprite := Sprite2D.new()
+		sprite.texture = weapons[index][0]
+		sprite.material = weapons[index][1]
+		sprite.centered = false
+		sprite.offset = -GRIP
+		# Mirrored, so that the blade rises behind the shoulder.
+		sprite.scale.x = 1.0 if facing_left else -1.0
+		sprite.position = Vector2(2 if facing_left else -2, 14)
+		sprite.rotation = _angle(0.15 + index * 0.5)
+		_back.add_child(sprite)
 
 
 ## Puts a weapon in the character's hand (null to empty it).
@@ -66,6 +125,9 @@ func fall() -> void:
 	_animation = HURT
 	_time = 0.0
 	_weapon.visible = false
+	_back.visible = false
+	if _shield:
+		_shield.visible = false
 
 
 func _process(delta: float) -> void:
@@ -86,6 +148,8 @@ func _process(delta: float) -> void:
 
 func _show_frame(column: int) -> void:
 	_atlas.region = Rect2(column * SIZE, SIZE if facing_left else 0, SIZE, SIZE)
+	if _overlay_atlas:
+		_overlay_atlas.region = _atlas.region
 
 
 ## Angles are given for a character facing right, and mirrored otherwise.

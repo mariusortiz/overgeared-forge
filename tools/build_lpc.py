@@ -54,11 +54,16 @@ BLOND = ((120, 80, 20), (255, 230, 130))
 HUMAN = ["body/bodies/male", "head/heads/human/male"]
 
 # name: list of layers, bottom first. A layer is a path, or (path, ramp).
+# Every sheet has the same frames, so one can be drawn over another.
 CHARACTERS = {
+    # Grid as at the start of the story: white T-shirt, black trousers.
     "grid": HUMAN + [
-        ("legs/pants/male", BLACK), ("feet/boots/basic/male", BROWN),
-        ("torso/clothes/longsleeve/longsleeve/male", CHARCOAL), "torso/armour/leather/male",
+        ("legs/pants/male", BLACK), ("feet/shoes/basic/male", BLACK),
+        ("torso/clothes/shortsleeve/tshirt/male", WHITE),
         ("hair/messy1/adult", BLACK)],
+    # Not a character: the armour alone, drawn over Grid when he wears a breastplate.
+    # It stays grey so that the game can give it the colours of its material.
+    "armor_plate": ["torso/armour/plate/male", "arms/armour/plate/male"],
     # Kesan Canyon
     "goblin": [("body/bodies/male", GREEN_SKIN), ("head/heads/goblin/adult", GREEN_SKIN),
         ("legs/pants/male", BROWN)],

@@ -105,7 +105,7 @@ func _begin(level: int) -> void:
 	_backdrop.centered = false
 	_backdrop.scale = Vector2(2, 2)
 	_field.add_child(_backdrop)
-	_hero = Actor.make(Catalog.HERO_SPRITE, false, 2.0)
+	_hero = Actor.make_hero(false, 2.0)
 	_hero.position = HERO_AT
 	_field.add_child(_hero)
 
@@ -439,6 +439,12 @@ func _refresh_slots() -> void:
 	UI.clear(_slot_row)
 	var held: Dictionary = _slots[_active]
 	_hero.hold(UI.weapon_texture(held.plan), UI.weapon_material(held.material, held.rarity))
+	# The other weapons wait on his back.
+	var others := []
+	for index in _slots.size():
+		if index != _active:
+			others.append([UI.weapon_texture(_slots[index].plan), UI.weapon_material(_slots[index].material, _slots[index].rarity)])
+	_hero.carry(others)
 	for index in _slots.size():
 		var weapon: Dictionary = _slots[index]
 		var skill: Dictionary = Catalog.PLANS[weapon.plan].skill
