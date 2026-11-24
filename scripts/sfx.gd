@@ -12,6 +12,8 @@ const SOUNDS := {
 	"hit": ["drop_001", -5.0],
 	"skill": ["glass_003", -9.0],
 	"hurt": ["bong_001", -3.0],
+	"parry": ["glass_003", -6.0],
+	"perfect": ["glass_006", -8.0],
 	"loot": ["confirmation_004", -8.0],
 	"plan": ["confirmation_002", -5.0],
 	"descend": ["question_004", -6.0],

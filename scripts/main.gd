@@ -10,6 +10,7 @@ extends Control
 ##   --mid       starts with a mid-game set (elemental weapons, a shield)
 ##   --floor=6   with --auto, the stage the expedition starts at
 ##   --jewels    with --screen=armory, opens the jewel panel of an item
+##   --rings     with --auto, the timing rings of fights are shown and timed perfectly
 ##   --wait      with --auto, the forge waits on its GO button (for pictures)
 ##   --deep      with --auto, never comes back: goes on until beaten
 ##   --test      does not read or write the save file

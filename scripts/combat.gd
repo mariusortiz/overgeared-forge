@@ -4,9 +4,12 @@ extends Control
 ## skill or switch weapon. After each stage: go on for more loot, or go home
 ## and keep it. Beaten, Grid loses the materials he was carrying.
 
-enum { IDLE, INTRO, PLAYER, ENEMIES, BETWEEN, CHOICE, OVER }
+enum { IDLE, INTRO, PLAYER, STRIKE, ENEMIES, PARRY, BETWEEN, CHOICE, OVER }
 
 const TURN_TIME := 2.5
+## The timing ring: its radius when it appears, and the golden circle's.
+const RING_START := 54.0
+const RING_TARGET := 16.0
 const HERO_AT := Vector2(84, 246)
 ## Where enemies stand, by how many there are.
 const ENEMY_SPOTS := {
@@ -21,6 +24,12 @@ var main: Control
 
 var _phase := IDLE
 var _timer := 0.0
+## The timing ring, from 0 (just appeared) to 1 (closed), and what it is for.
+var _ring := 0.0
+var _tapped := false
+var _use_skill := false
+var _strike_mult := 1.0
+var _attacker := {}
 var _floor := 1
 var _start_floor := 1
 var _hero_hp := 0.0
@@ -44,6 +53,7 @@ var _backdrop: Sprite2D
 var _hero: Actor
 var _title: Label
 var _carried: Label
+var _hint: Label
 var _bars: Control
 var _slot_row: HBoxContainer
 var _overlay: PanelContainer
@@ -63,7 +73,7 @@ func _exit_tree() -> void:
 # --- Entrance --------------------------------------------------------------
 
 func _show_entrance() -> void:
-	var text := "EXPÉDITION\n\nChaque étape est un combat, de plus en plus dur, avec un boss toutes les %d étapes : le canyon de Kesan, les terres du comte Ashur, le temple de Yatan... Plus tu vas loin, meilleurs sont les matériaux.\n\nAprès chaque étape, tu peux rentrer avec ton butin. Si Grid est battu, le butin porté est perdu." % Catalog.BOSS_EVERY
+	var text := "EXPÉDITION\n\nChaque étape est un combat, de plus en plus dur, avec un boss toutes les %d étapes : le canyon de Kesan, les terres du comte Ashur, le temple de Yatan... Plus tu vas loin, meilleurs sont les matériaux.\n\nAprès chaque étape, tu peux rentrer avec ton butin. Si Grid est battu, le butin porté est perdu.\n\nTouche au bon moment pour frapper plus fort, et pour parer les boss." % Catalog.BOSS_EVERY
 	if Save.best_floor > 0:
 		text += "\n\nRecord : étape %d" % Save.best_floor
 	if Save.equipped_items("weapon").is_empty():
@@ -127,6 +137,11 @@ func _begin(level: int) -> void:
 	_carried = UI.label("", UI.SMALL, UI.TEXT)
 	_carried.position = Vector2(8, 28)
 	add_child(_carried)
+	_hint = UI.centered("", UI.BODY, UI.GOLD, 360.0)
+	_hint.position = Vector2(0, 74)
+	_hint.add_theme_color_override("font_outline_color", UI.INK)
+	_hint.add_theme_constant_override("outline_size", 4)
+	add_child(_hint)
 
 	var holder := UI.panel()
 	holder.position = Vector2(0, 400)
@@ -181,9 +196,20 @@ func _process(delta: float) -> void:
 		PLAYER:
 			if _timer <= 0.0:
 				_act(_best_auto_choice() if main.auto else -1)
+		STRIKE:
+			_auto_tap()
+			_ring += delta / Catalog.STRIKE_TIME
+			if _tapped or _ring >= 1.0:
+				_strike(_timing_grade())
 		ENEMIES:
 			if _timer <= 0.0:
 				_enemy_attack()
+		PARRY:
+			_auto_tap()
+			_ring += delta / Catalog.PARRY_TIME
+			if _tapped or _ring >= 1.0:
+				_phase = ENEMIES
+				_enemy_hit(_attacker, _timing_grade())
 		BETWEEN:
 			if _timer <= 0.0:
 				_after_floor()
@@ -207,12 +233,51 @@ func _player_turn() -> void:
 func _act(choice: int) -> void:
 	if _phase != PLAYER:
 		return
-	var skill := false
+	_use_skill = false
 	if choice >= 0 and choice != _active:
 		_active = choice
 		Sfx.play("switch")
+		_refresh_slots()
 	elif choice == _active and _slots[_active].cooldown <= 0:
-		skill = true
+		_use_skill = true
+	# The game playing by itself gets an ordinary hit, unless asked to time the rings.
+	if main.auto and not _auto_rings():
+		_strike(1)
+		return
+	_phase = STRIKE
+	_ring = 0.0
+	_tapped = false
+	_hint.text = "Touche quand le cercle rejoint l'anneau doré !"
+
+
+## With --auto --rings, the game times the rings itself, perfectly.
+func _auto_rings() -> bool:
+	return main.auto and main.options.has("rings")
+
+
+func _auto_tap() -> void:
+	if _auto_rings() and lerpf(RING_START, 0.0, _ring) <= RING_TARGET + 1.0:
+		_tapped = true
+
+
+## 0 missed (or not touched), 1 good, 2 perfect: how well the ring was timed.
+func _timing_grade() -> int:
+	if not _tapped:
+		return 0
+	var radius := lerpf(RING_START, 0.0, _ring)
+	var accuracy := 1.0 - absf(radius - RING_TARGET) / 24.0
+	return 2 if accuracy >= Catalog.TIMING_PERFECT else (1 if accuracy >= Catalog.TIMING_GOOD else 0)
+
+
+## The attack lands, stronger or weaker with the timing.
+func _strike(grade: int) -> void:
+	_hint.text = ""
+	_strike_mult = Catalog.STRIKE_DAMAGE[grade]
+	if not main.auto or _auto_rings():
+		UI.float_text(self, ["Raté", "Bien", "Parfait !"][grade], HERO_AT + Vector2(0, -96), [UI.BAD, UI.GOOD, UI.GOLD][grade])
+		if grade == 2:
+			Sfx.play("perfect")
+	var skill := _use_skill
 	for slot in _slots:
 		slot.cooldown = maxi(0, slot.cooldown - 1)
 	var weapon: Dictionary = _slots[_active]
@@ -246,6 +311,7 @@ func _act(choice: int) -> void:
 	var lunge := create_tween()
 	lunge.tween_property(_hero, "position:x", HERO_AT.x + 30, 0.1)
 	lunge.tween_property(_hero, "position:x", HERO_AT.x, 0.2)
+	_strike_mult = 1.0
 	_refresh_slots()
 	_enemy_turn = 0
 	_phase = ENEMIES
@@ -259,7 +325,7 @@ func _hit_enemy(index: int, weapon: Dictionary, power: float) -> float:
 		return 0.0
 	var element := Catalog.item_element(weapon)
 	var weak: bool = element == enemy.weak
-	var damage: float = weapon.attack * power * _attack_bonus * _rng.randf_range(0.9, 1.1)
+	var damage: float = weapon.attack * power * _attack_bonus * _strike_mult * _rng.randf_range(0.9, 1.1)
 	if weak:
 		damage *= Catalog.WEAK_BONUS
 	damage = minf(damage, enemy.hp)
@@ -312,10 +378,29 @@ func _enemy_attack() -> void:
 		UI.float_text(self, "Sonné", sprite.position + Vector2(0, -78), UI.DIM)
 		_timer = 0.3
 		return
-	var damage: float = enemy.attack * _guard * (1.0 - _block) * _rng.randf_range(0.85, 1.15)
+	# A parry is offered against bosses (or everyone, see the catalogue).
+	if (not main.auto or _auto_rings()) and (enemy.boss or not Catalog.PARRY_BOSSES_ONLY):
+		_attacker = enemy
+		_phase = PARRY
+		_ring = 0.0
+		_tapped = false
+		_hint.text = "Pare : touche quand le cercle rejoint l'anneau !"
+		return
+	_enemy_hit(enemy, 0)
+
+
+## An enemy's blow lands, softened by the parry (0 none, 1 good, 2 perfect).
+func _enemy_hit(enemy: Dictionary, grade: int) -> void:
+	_hint.text = ""
+	var sprite: Actor = enemy.sprite
+	var damage: float = enemy.attack * _guard * (1.0 - _block) * Catalog.PARRY_DAMAGE[grade] * _rng.randf_range(0.85, 1.15)
 	_hero_hp = maxf(0.0, _hero_hp - damage)
 	UI.float_text(self, "-" + str(roundi(damage)), HERO_AT + Vector2(0, -54), UI.BAD)
-	Sfx.play("hurt", _rng.randf_range(0.9, 1.1))
+	if grade > 0:
+		UI.float_text(self, ["", "Parade", "Parade parfaite !"][grade], HERO_AT + Vector2(0, -96), [UI.BAD, UI.GOOD, UI.GOLD][grade])
+		Sfx.play("parry")
+	else:
+		Sfx.play("hurt", _rng.randf_range(0.9, 1.1))
 	sprite.attack()
 	var home := sprite.position
 	var lunge := sprite.create_tween()
@@ -488,6 +573,14 @@ func _refresh_slots() -> void:
 		_slot_row.add_child(button)
 
 
+func _input(event: InputEvent) -> void:
+	# During a timing ring, a touch anywhere counts.
+	if _phase != STRIKE and _phase != PARRY:
+		return
+	if (event is InputEventMouseButton and event.pressed) or event.is_action_pressed("ui_accept"):
+		_tapped = true
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	# Touching an enemy makes it the target.
 	if _field == null or not (event is InputEventMouseButton and event.pressed):
@@ -514,6 +607,14 @@ func _draw_bars() -> void:
 	_bars.draw_string(get_theme_default_font(), HERO_AT + Vector2(-60, 90), "%s  %d/%d" % [Catalog.HERO_NAME, roundi(_hero_hp), roundi(_hero_max)], HORIZONTAL_ALIGNMENT_CENTER, 120, UI.BODY, UI.TEXT)
 	if _phase == PLAYER:
 		_bar(Rect2(8, 388, 344, 6), _timer / TURN_TIME, UI.GOLD)
+	# The timing ring: on the target when striking, on Grid when parrying.
+	if _phase == STRIKE or _phase == PARRY:
+		var center := HERO_AT
+		if _phase == STRIKE and _target >= 0 and _target < _enemies.size():
+			center = _enemies[_target].sprite.position
+		_bars.draw_circle(center, RING_TARGET + 2.0, Color(0, 0, 0, 0.35))
+		_bars.draw_arc(center, RING_TARGET, 0, TAU, 32, UI.GOLD, 4.0)
+		_bars.draw_arc(center, maxf(lerpf(RING_START, 0.0, _ring), 1.0), 0, TAU, 48, Color.WHITE if _phase == STRIKE else UI.BAD, 3.0)
 
 
 func _bar(rect: Rect2, ratio: float, color: Color) -> void:

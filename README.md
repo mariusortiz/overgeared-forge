@@ -43,6 +43,8 @@ La note bouge de 4 points au hasard, et le matériau fixe la rareté maximale. L
 
 **Expédition.** Chaque étape est un combat, de plus en plus dur, avec un boss toutes les 5 étapes. Grid porte jusqu'à trois armes et une armure. À chaque tour, il frappe tout seul à la fin du chrono ; avant, tu peux toucher l'arme en main pour lancer sa compétence, ou une autre arme pour en changer. Chaque ennemi craint un élément (le carré de couleur au bout de sa barre de vie) : la bonne arme fait 50 % de dégâts en plus.
 
+Chaque coup se joue au bon moment : un cercle blanc se referme sur la cible, et il faut toucher quand il rejoint l'anneau doré. Un coup parfait fait 40 % de dégâts en plus, un coup raté (ou pas de toucher du tout) 40 % en moins. Contre les boss, le même cercle, en rouge, se referme sur Grid quand ils attaquent : une parade réduit les dégâts de 40 %, une parade parfaite de 75 %.
+
 | Étapes | Zone | Ennemis | Boss |
 |---|---|---|---|
 | 1 à 5 | Canyon de Kesan | Gobelin, squelette, orc | Chef orc |
@@ -114,4 +116,4 @@ godot --path . -- --test --demo --screen=album     # ouvrir un écran avec des a
 godot --headless --path . --fixed-fps 60 --quit-after 3600 -- --test --basic --auto --screen=combat
 ```
 
-Les options (`--auto`, `--deep`, `--demo`, `--mid`, `--basic`, `--floor=`, `--test`, `--capture=`) sont décrites en tête de `scripts/main.gd`. Avec `--auto`, le jeu joue seul et écrit une ligne `FORGE …` ou `MINE …` par résultat : c'est ce que vérifie le build.
+Les options (`--auto`, `--rings`, `--deep`, `--demo`, `--mid`, `--basic`, `--floor=`, `--test`, `--capture=`) sont décrites en tête de `scripts/main.gd`. Avec `--auto`, le jeu joue seul et écrit une ligne `FORGE …` ou `MINE …` par résultat : c'est ce que vérifie le build.

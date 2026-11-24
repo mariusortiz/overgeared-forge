@@ -75,6 +75,8 @@ jobs:
           godot --headless --fixed-fps 60 --quit-after 9000 -- --test --demo --auto --deep --screen=combat 2>&1 | tee -a run.log
           godot --headless --fixed-fps 60 --quit-after 3600 -- --test --basic --auto --screen=combat 2>&1 | tee -a run.log
           godot --headless --fixed-fps 60 --quit-after 3600 -- --test --auto --screen=combat 2>&1 | tee -a run.log
+          # The same beginner, timing the rings: strikes and the boss's parry.
+          godot --headless --fixed-fps 60 --quit-after 7200 -- --test --basic --auto --rings --screen=combat 2>&1 | tee -a run.log
           grep -q "^FORGE " run.log
           # The strong set goes past the second boss; a beginner clears at least one floor.
           grep -qE "^MINE .*cleared=1[0-9] result=beaten" run.log

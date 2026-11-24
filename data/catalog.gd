@@ -112,6 +112,20 @@ const HERO_HP := 120
 const BARE_WEAPON := {"uid": 0, "plan": "hammer", "material": "iron", "rarity": 0, "attack": 6, "bare": true}
 const WEAK_BONUS := 1.5
 
+## Timing in fights. A white ring closes on the target in STRIKE_TIME seconds;
+## touching when it meets the golden circle multiplies the damage dealt:
+## [missed or not touched, good, perfect].
+const STRIKE_TIME := 0.9
+const STRIKE_DAMAGE := [0.6, 1.0, 1.4]
+## Attacks can be parried the same way; damage received: [missed, good, perfect].
+const PARRY_TIME := 0.8
+const PARRY_DAMAGE := [1.0, 0.6, 0.25]
+## Only bosses' attacks can be parried, to keep ordinary fights quick.
+const PARRY_BOSSES_ONLY := true
+## How close the touch must be to count (1 = exactly on the circle).
+const TIMING_GOOD := 0.5
+const TIMING_PERFECT := 0.85
+
 # --- The mine --------------------------------------------------------------
 
 ## Every floor is a fight; every BOSS_EVERY floors, a boss. Enemies get this
