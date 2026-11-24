@@ -117,12 +117,15 @@ const WEAK_BONUS := 1.5
 ## touching when it meets the golden circle multiplies the damage dealt:
 ## [missed or not touched, good, perfect].
 const STRIKE_TIME := 0.9
+## Against a boss the ring closes faster.
+const STRIKE_TIME_BOSS := 0.7
 const STRIKE_DAMAGE := [0.6, 1.0, 1.4]
-## Attacks can be parried the same way; damage received: [missed, good, perfect].
-const PARRY_TIME := 0.8
-const PARRY_DAMAGE := [1.0, 0.6, 0.25]
-## Only bosses' attacks can be parried, to keep ordinary fights quick.
-const PARRY_BOSSES_ONLY := true
+## Every enemy's attack can be parried the same way; damage received:
+## [missed, good, perfect]. Each enemy has its own rhythm (see ENEMIES).
+const PARRY_DAMAGE := [1.0, 0.65, 0.35]
+## How a ring closes: "steady" at an even pace, "rush" slowly then very fast,
+## "feint" stops halfway before finishing fast.
+const RING_STYLES := ["steady", "rush", "feint"]
 ## How close the touch must be to count (1 = exactly on the circle).
 const TIMING_GOOD := 0.5
 const TIMING_PERFECT := 0.85
@@ -138,20 +141,22 @@ const FLOOR_SIZES := [2, 2, 3, 3]
 
 ## sprite: a character of assets/lpc (see tools/build_lpc.py);
 ## weapon: a picture of assets/weapons, held in hand.
+## parry: the rhythm of its attack, [seconds the ring takes to close, style].
+## The shorter, the harder; bosses are fast and tricky.
 const ENEMIES := {
-	"goblin": {"name": "Gobelin", "sprite": "goblin", "weapon": "mace2", "hp": 22, "attack": 3, "weak": "fire"},
-	"skeleton": {"name": "Squelette", "sprite": "skeleton", "weapon": "sword1", "hp": 24, "attack": 4, "weak": "lightning"},
-	"orc": {"name": "Orc", "sprite": "orc", "weapon": "axe1", "hp": 32, "attack": 5, "weak": "ice"},
-	"soldier": {"name": "Soldat d'Ashur", "sprite": "soldier", "weapon": "spear2", "hp": 28, "attack": 5, "weak": "ice"},
-	"mercenary": {"name": "Mercenaire", "sprite": "mercenary", "weapon": "dagger1", "hp": 26, "attack": 6, "weak": "fire"},
-	"knight": {"name": "Chevalier d'Ashur", "sprite": "knight", "weapon": "sword3", "hp": 42, "attack": 5, "weak": "lightning"},
-	"cultist": {"name": "Adepte de Yatan", "sprite": "cultist", "weapon": "dagger5", "hp": 30, "attack": 7, "weak": "ice"},
-	"zealot": {"name": "Fanatique", "sprite": "zealot", "weapon": "mace1", "hp": 34, "attack": 8, "weak": "fire"},
-	"dark_priest": {"name": "Prêtre noir", "sprite": "dark_priest", "weapon": "staff1", "hp": 28, "attack": 9, "weak": "lightning"},
-	"rival": {"name": "Joueur rival", "sprite": "rival", "weapon": "sword1", "hp": 44, "attack": 8, "weak": "fire"},
-	"orc_chief": {"name": "Chef orc", "sprite": "orc_chief", "weapon": "axe4", "hp": 160, "attack": 9, "weak": "fire", "boss": true},
-	"captain": {"name": "Capitaine d'Ashur", "sprite": "captain", "weapon": "sword3", "hp": 170, "attack": 10, "weak": "lightning", "boss": true},
-	"malacus": {"name": "Malacus", "sprite": "malacus", "weapon": "staff3", "hp": 180, "attack": 11, "weak": "ice", "boss": true},
+	"goblin": {"name": "Gobelin", "sprite": "goblin", "weapon": "mace2", "hp": 22, "attack": 3, "weak": "fire", "parry": [0.9, "steady"]},
+	"skeleton": {"name": "Squelette", "sprite": "skeleton", "weapon": "sword1", "hp": 24, "attack": 4, "weak": "lightning", "parry": [0.8, "steady"]},
+	"orc": {"name": "Orc", "sprite": "orc", "weapon": "axe1", "hp": 32, "attack": 5, "weak": "ice", "parry": [1.0, "rush"]},
+	"soldier": {"name": "Soldat d'Ashur", "sprite": "soldier", "weapon": "spear2", "hp": 28, "attack": 5, "weak": "ice", "parry": [0.8, "steady"]},
+	"mercenary": {"name": "Mercenaire", "sprite": "mercenary", "weapon": "dagger1", "hp": 26, "attack": 6, "weak": "fire", "parry": [0.6, "steady"]},
+	"knight": {"name": "Chevalier d'Ashur", "sprite": "knight", "weapon": "sword3", "hp": 42, "attack": 5, "weak": "lightning", "parry": [1.0, "rush"]},
+	"cultist": {"name": "Adepte de Yatan", "sprite": "cultist", "weapon": "dagger5", "hp": 30, "attack": 7, "weak": "ice", "parry": [0.7, "steady"]},
+	"zealot": {"name": "Fanatique", "sprite": "zealot", "weapon": "mace1", "hp": 34, "attack": 8, "weak": "fire", "parry": [0.9, "rush"]},
+	"dark_priest": {"name": "Prêtre noir", "sprite": "dark_priest", "weapon": "staff1", "hp": 28, "attack": 9, "weak": "lightning", "parry": [1.0, "feint"]},
+	"rival": {"name": "Joueur rival", "sprite": "rival", "weapon": "sword1", "hp": 44, "attack": 8, "weak": "fire", "parry": [0.7, "feint"]},
+	"orc_chief": {"name": "Chef orc", "sprite": "orc_chief", "weapon": "axe4", "hp": 160, "attack": 9, "weak": "fire", "parry": [0.75, "rush"], "boss": true},
+	"captain": {"name": "Capitaine d'Ashur", "sprite": "captain", "weapon": "sword3", "hp": 170, "attack": 10, "weak": "lightning", "parry": [0.65, "feint"], "boss": true},
+	"malacus": {"name": "Malacus", "sprite": "malacus", "weapon": "staff3", "hp": 180, "attack": 11, "weak": "ice", "parry": [0.6, "feint"], "boss": true},
 }
 ## One zone for every BOSS_EVERY floors; the last one serves for all deeper floors.
 ## backdrop: a picture of assets/lpc/backdrops (see tools/build_backdrops.py).
@@ -354,6 +359,20 @@ static func floor_enemies(level: int, rng: RandomNumberGenerator) -> Array:
 
 static func zone(level: int) -> Dictionary:
 	return ZONES[mini(depth_tier(level), ZONES.size() - 1)]
+
+
+## How far a ring has closed (0 to 1) after a share of its time (0 to 1).
+static func ring_progress(style: String, time: float) -> float:
+	match style:
+		"rush":
+			return pow(time, 2.2)
+		"feint":
+			if time < 0.4:
+				return time * 0.75
+			if time < 0.6:
+				return 0.3
+			return 0.3 + (time - 0.6) / 0.4 * 0.7
+	return time
 
 
 static func floor_strength(level: int) -> float:

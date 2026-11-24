@@ -43,7 +43,7 @@ La note bouge de 4 points au hasard, et le matériau fixe la rareté maximale. L
 
 **Expédition.** Chaque étape est un combat, de plus en plus dur, avec un boss toutes les 5 étapes. Grid porte jusqu'à trois armes, une armure et un bouclier. À chaque tour, il frappe tout seul à la fin du chrono ; avant, tu peux toucher l'arme en main pour lancer sa compétence, ou une autre arme pour en changer. Chaque ennemi craint un élément (le carré de couleur au bout de sa barre de vie) : la bonne arme fait 50 % de dégâts en plus.
 
-Chaque coup se joue au bon moment : un cercle blanc se referme sur la cible, et il faut toucher quand il rejoint l'anneau doré. Un coup parfait fait 40 % de dégâts en plus, un coup raté (ou pas de toucher du tout) 40 % en moins. Contre les boss, le même cercle, en rouge, se referme sur Grid quand ils attaquent : une parade réduit les dégâts de 40 %, une parade parfaite de 75 %.
+Chaque coup se joue au bon moment : un cercle blanc se referme sur la cible, et il faut toucher quand il rejoint l'anneau doré. Un coup parfait fait 40 % de dégâts en plus, un coup raté (ou pas de toucher du tout) 40 % en moins. Quand un ennemi attaque, le même cercle, en rouge, se referme sur Grid : une parade réduit les dégâts de 35 %, une parade parfaite de 65 %. Chaque ennemi a son rythme : certains frappent vite (le mercenaire), d'autres démarrent lentement puis accélèrent (l'orc, le chevalier), d'autres encore marquent un temps d'arrêt avant de frapper (le prêtre noir, le joueur rival). Les boss sont plus rapides et plus trompeurs, et le cercle d'attaque se referme plus vite contre eux.
 
 | Étapes | Zone | Ennemis | Boss |
 |---|---|---|---|

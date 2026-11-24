@@ -26,6 +26,8 @@ var _phase := IDLE
 var _timer := 0.0
 ## The timing ring, from 0 (just appeared) to 1 (closed), and what it is for.
 var _ring := 0.0
+var _ring_time := 1.0
+var _ring_style := "steady"
 var _tapped := false
 var _use_skill := false
 var _strike_mult := 1.0
@@ -73,7 +75,7 @@ func _exit_tree() -> void:
 # --- Entrance --------------------------------------------------------------
 
 func _show_entrance() -> void:
-	var text := "EXPÉDITION\n\nChaque étape est un combat, de plus en plus dur, avec un boss toutes les %d étapes : le canyon de Kesan, les terres du comte Ashur, le temple de Yatan... Plus tu vas loin, meilleurs sont les matériaux.\n\nAprès chaque étape, tu peux rentrer avec ton butin. Si Grid est battu, le butin porté est perdu.\n\nTouche au bon moment pour frapper plus fort, et pour parer les boss." % Catalog.BOSS_EVERY
+	var text := "EXPÉDITION\n\nChaque étape est un combat, de plus en plus dur, avec un boss toutes les %d étapes : le canyon de Kesan, les terres du comte Ashur, le temple de Yatan... Plus tu vas loin, meilleurs sont les matériaux.\n\nAprès chaque étape, tu peux rentrer avec ton butin. Si Grid est battu, le butin porté est perdu.\n\nTouche au bon moment pour frapper plus fort et pour parer : chaque ennemi a son rythme." % Catalog.BOSS_EVERY
 	if Save.best_floor > 0:
 		text += "\n\nRecord : étape %d" % Save.best_floor
 	if Save.equipped_items("weapon").is_empty():
@@ -198,7 +200,7 @@ func _process(delta: float) -> void:
 				_act(_best_auto_choice() if main.auto else -1)
 		STRIKE:
 			_auto_tap()
-			_ring += delta / Catalog.STRIKE_TIME
+			_ring += delta / _ring_time
 			if _tapped or _ring >= 1.0:
 				_strike(_timing_grade())
 		ENEMIES:
@@ -206,7 +208,7 @@ func _process(delta: float) -> void:
 				_enemy_attack()
 		PARRY:
 			_auto_tap()
-			_ring += delta / Catalog.PARRY_TIME
+			_ring += delta / _ring_time
 			if _tapped or _ring >= 1.0:
 				_phase = ENEMIES
 				_enemy_hit(_attacker, _timing_grade())
@@ -245,8 +247,7 @@ func _act(choice: int) -> void:
 		_strike(1)
 		return
 	_phase = STRIKE
-	_ring = 0.0
-	_tapped = false
+	_start_ring(Catalog.STRIKE_TIME_BOSS if _enemies[_target].boss else Catalog.STRIKE_TIME, "steady")
 	_hint.text = "Touche quand le cercle rejoint l'anneau doré !"
 
 
@@ -256,16 +257,27 @@ func _auto_rings() -> bool:
 
 
 func _auto_tap() -> void:
-	if _auto_rings() and lerpf(RING_START, 0.0, _ring) <= RING_TARGET + 1.0:
+	if _auto_rings() and _ring_radius() <= RING_TARGET + 1.5:
 		_tapped = true
+
+
+func _start_ring(seconds: float, style: String) -> void:
+	_ring = 0.0
+	_ring_time = seconds
+	_ring_style = style
+	_tapped = false
+
+
+## The ring's radius now: it closes at the pace of its style.
+func _ring_radius() -> float:
+	return RING_START * (1.0 - Catalog.ring_progress(_ring_style, clampf(_ring, 0.0, 1.0)))
 
 
 ## 0 missed (or not touched), 1 good, 2 perfect: how well the ring was timed.
 func _timing_grade() -> int:
 	if not _tapped:
 		return 0
-	var radius := lerpf(RING_START, 0.0, _ring)
-	var accuracy := 1.0 - absf(radius - RING_TARGET) / 24.0
+	var accuracy := 1.0 - absf(_ring_radius() - RING_TARGET) / 24.0
 	return 2 if accuracy >= Catalog.TIMING_PERFECT else (1 if accuracy >= Catalog.TIMING_GOOD else 0)
 
 
@@ -378,13 +390,13 @@ func _enemy_attack() -> void:
 		UI.float_text(self, "Sonné", sprite.position + Vector2(0, -78), UI.DIM)
 		_timer = 0.3
 		return
-	# A parry is offered against bosses (or everyone, see the catalogue).
-	if (not main.auto or _auto_rings()) and (enemy.boss or not Catalog.PARRY_BOSSES_ONLY):
+	# Every attack can be parried, each enemy at its own rhythm.
+	if not main.auto or _auto_rings():
+		var rhythm: Array = Catalog.ENEMIES[enemy.id].parry
 		_attacker = enemy
 		_phase = PARRY
-		_ring = 0.0
-		_tapped = false
-		_hint.text = "Pare : touche quand le cercle rejoint l'anneau !"
+		_start_ring(rhythm[0], rhythm[1])
+		_hint.text = "%s attaque : pare !" % enemy.name
 		return
 	_enemy_hit(enemy, 0)
 
@@ -614,7 +626,7 @@ func _draw_bars() -> void:
 			center = _enemies[_target].sprite.position
 		_bars.draw_circle(center, RING_TARGET + 2.0, Color(0, 0, 0, 0.35))
 		_bars.draw_arc(center, RING_TARGET, 0, TAU, 32, UI.GOLD, 4.0)
-		_bars.draw_arc(center, maxf(lerpf(RING_START, 0.0, _ring), 1.0), 0, TAU, 48, Color.WHITE if _phase == STRIKE else UI.BAD, 3.0)
+		_bars.draw_arc(center, maxf(_ring_radius(), 1.0), 0, TAU, 48, Color.WHITE if _phase == STRIKE else UI.BAD, 3.0)
 
 
 func _bar(rect: Rect2, ratio: float, color: Color) -> void:
