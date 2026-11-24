@@ -129,7 +129,7 @@ func is_equipped(uid: int) -> bool:
 	return uid in equipped
 
 
-## True while the item's slot (three weapons, one armour) still has room.
+## True while the item's slot (three weapons, one armour, one shield) still has room.
 func can_equip(item: Dictionary) -> bool:
 	var slot: String = Catalog.PLANS[item.plan].slot
 	return equipped_items(slot).size() < Catalog.SLOT_LIMITS[slot]
@@ -150,6 +150,11 @@ func equipped_items(slot: String) -> Array:
 			if item.uid == uid and Catalog.PLANS[item.plan].slot == slot:
 				list.append(item)
 	return list
+
+
+## The armour and the shield Grid has equipped.
+func equipped_protection() -> Array:
+	return equipped_items("armor") + equipped_items("shield")
 
 
 ## The floors the player may start from: the first, and the one after each boss beaten.

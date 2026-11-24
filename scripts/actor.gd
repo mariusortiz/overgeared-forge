@@ -53,7 +53,7 @@ static func make(character: String, left: bool, zoom: float) -> Actor:
 ## Grid as the save describes him: wearing the armour he has equipped.
 static func make_hero(left: bool, zoom: float) -> Actor:
 	var hero := make(Catalog.HERO_SPRITE, left, zoom)
-	for armor in Save.equipped_items("armor"):
+	for armor in Save.equipped_protection():
 		var shader := UI.weapon_material(armor.material, armor.rarity)
 		var plan: Dictionary = Catalog.PLANS[armor.plan]
 		if plan.has("worn"):

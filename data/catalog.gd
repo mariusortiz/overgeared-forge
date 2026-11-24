@@ -52,7 +52,7 @@ const PLANS := {
 		"skill": {"name": "Double frappe", "kind": "double", "power": 1.1, "cooldown": 2}},
 	"spear": {"name": "Lance", "slot": "weapon", "sprite": "spear1", "attack": 10,
 		"skill": {"name": "Percée", "kind": "all", "power": 0.9, "cooldown": 2}},
-	"shield": {"name": "Bouclier", "slot": "armor", "sprite": "shield", "hp": 12, "block": 0.15},
+	"shield": {"name": "Bouclier", "slot": "shield", "sprite": "shield", "hp": 12, "block": 0.15},
 	"axe": {"name": "Hache", "slot": "weapon", "sprite": "axe3", "attack": 14,
 		"skill": {"name": "Fendoir", "kind": "single", "power": 3.0, "cooldown": 4}},
 	"plate": {"name": "Plastron", "slot": "armor", "sprite": "plate", "hp": 25, "block": 0.0, "worn": "armor_plate"},
@@ -75,7 +75,8 @@ const RARITY_RULES := [[1, 55, 0], [2, 72, 50], [3, 84, 65], [4, 93, 80]]
 const RARITY_LUCK := 4.0
 ## Mythic: [lowest note, lowest note for the weakest gesture, chances].
 const MYTH_RULE := [96, 90, 0.2]
-const SLOT_LIMITS := {"weapon": 3, "armor": 1}
+## What Grid can have equipped at once: three weapons, one armour and one shield.
+const SLOT_LIMITS := {"weapon": 3, "armor": 1, "shield": 1}
 
 ## How many items Grid can keep, equipped ones included: a base, plus one for
 ## each boss beaten, up to a maximum. Beyond that, something must be melted.

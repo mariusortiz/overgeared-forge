@@ -1,6 +1,6 @@
 extends Control
-## The inventory: a limited number of items. Equip up to three weapons and one
-## armour, melt the rest back into material.
+## The inventory: a limited number of items. Equip up to three weapons, one armour
+## and one shield, melt the rest back into material.
 
 var main: Control
 var _list: VBoxContainer
@@ -32,10 +32,12 @@ func _ready() -> void:
 
 func _refresh() -> void:
 	UI.clear(_list)
-	_title.text = "Inventaire %d/%d  ·  Armes %d/%d  ·  Armure %d/%d" % [
+	_title.text = "Inventaire %d/%d  ·  Armes %d/%d  ·  Armure %d/%d  ·  Bouclier %d/%d" % [
 		Save.items.size(), Save.capacity(),
 		Save.equipped_items("weapon").size(), Catalog.SLOT_LIMITS.weapon,
-		Save.equipped_items("armor").size(), Catalog.SLOT_LIMITS.armor]
+		Save.equipped_items("armor").size(), Catalog.SLOT_LIMITS.armor,
+		Save.equipped_items("shield").size(), Catalog.SLOT_LIMITS.shield]
+	_title.add_theme_font_size_override("font_size", UI.SMALL)
 	_title.add_theme_color_override("font_color", UI.BAD if Save.is_full() else UI.GOLD)
 	var stock := Catalog.jewels_text(Save.jewels)
 	_list.add_child(UI.label("Joyaux : " + (stock if stock != "" else "aucun (les boss en lâchent)"), UI.SMALL, UI.TEXT if stock != "" else UI.DIM))

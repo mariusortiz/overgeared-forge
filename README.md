@@ -41,7 +41,7 @@ La note bouge de 4 points au hasard, et le matériau fixe la rareté maximale. L
 | Mithril | Neutre | Légendaire | À partir de l'étape 6, surtout après la 11 |
 | Orichalque bleu | Foudre | Légendaire | À partir de l'étape 11 |
 
-**Expédition.** Chaque étape est un combat, de plus en plus dur, avec un boss toutes les 5 étapes. Grid porte jusqu'à trois armes et une armure. À chaque tour, il frappe tout seul à la fin du chrono ; avant, tu peux toucher l'arme en main pour lancer sa compétence, ou une autre arme pour en changer. Chaque ennemi craint un élément (le carré de couleur au bout de sa barre de vie) : la bonne arme fait 50 % de dégâts en plus.
+**Expédition.** Chaque étape est un combat, de plus en plus dur, avec un boss toutes les 5 étapes. Grid porte jusqu'à trois armes, une armure et un bouclier. À chaque tour, il frappe tout seul à la fin du chrono ; avant, tu peux toucher l'arme en main pour lancer sa compétence, ou une autre arme pour en changer. Chaque ennemi craint un élément (le carré de couleur au bout de sa barre de vie) : la bonne arme fait 50 % de dégâts en plus.
 
 Chaque coup se joue au bon moment : un cercle blanc se referme sur la cible, et il faut toucher quand il rejoint l'anneau doré. Un coup parfait fait 40 % de dégâts en plus, un coup raté (ou pas de toucher du tout) 40 % en moins. Contre les boss, le même cercle, en rouge, se referme sur Grid quand ils attaquent : une parade réduit les dégâts de 40 %, une parade parfaite de 75 %.
 
@@ -80,7 +80,7 @@ Le matériau supérieur des trois élémentaires est le mithril, celui du mithri
 
 Le rang dépend de la zone du boss : C dans le canyon, B possible chez le comte Ashur, S possible à partir du temple de Yatan. Un objet Rare ou Épique a un emplacement, un Unique deux, un Légendaire ou un Mythique trois ; un objet Normal n'en a pas. Le bouton Sertir de l'inventaire pose ou retire les joyaux librement, et fondre un objet les rend. Les joyaux de tout ce que Grid porte s'additionnent.
 
-Équipe trois armes et une armure. Ce que Grid équipe se voit sur lui : il commence en T-shirt blanc, porte le plastron ou le bouclier forgé (aux couleurs de son matériau), garde ses deux autres armes dans le dos en expédition, et les accroche au mur de l'atelier. Sans arme, Grid se bat avec son marteau de forge : on n'est jamais bloqué.
+Équipe trois armes, une armure et un bouclier. Ce que Grid équipe se voit sur lui : il commence en T-shirt blanc, porte le plastron et le bouclier forgés (aux couleurs de leur matériau), garde ses deux autres armes dans le dos en expédition, et les accroche au mur de l'atelier. Sans arme, Grid se bat avec son marteau de forge : on n'est jamais bloqué.
 
 **Album.** Une case par plan et par matériau (48), avec la meilleure rareté forgée.
 

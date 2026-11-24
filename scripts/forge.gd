@@ -124,7 +124,7 @@ func _show_select() -> void:
 	if plan.slot == "weapon":
 		what += "\n%s · %s · rareté max %s" % [plan.skill.name, element.name, best.name]
 	else:
-		what += "\nArmure · rareté max %s" % best.name
+		what += "\n%s · rareté max %s" % ["Bouclier" if plan.slot == "shield" else "Armure", best.name]
 	_panel.add_child(UI.centered(what, UI.BODY, element.color))
 
 	var enough := Save.material_count(_material) >= Catalog.FORGE_COST

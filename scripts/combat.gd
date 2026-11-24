@@ -95,11 +95,11 @@ func _begin(level: int) -> void:
 	_start_floor = level
 	_hero_max = Catalog.HERO_HP
 	_block = 0.0
-	for armor in Save.equipped_items("armor"):
+	for armor in Save.equipped_protection():
 		_hero_max += armor.hp
 		_block += Catalog.PLANS[armor.plan].block
 	# The jewels of everything equipped add up.
-	var bonus := Catalog.jewel_bonus(Save.equipped_items("weapon") + Save.equipped_items("armor"))
+	var bonus := Catalog.jewel_bonus(Save.equipped_items("weapon") + Save.equipped_protection())
 	_hero_max += bonus.hp
 	_kill_heal = bonus.heal
 	_hero_hp = _hero_max
