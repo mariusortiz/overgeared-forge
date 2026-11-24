@@ -68,6 +68,16 @@ Si Grid est battu, le butin porté est perdu. Chaque boss battu donne un nouveau
 
 Le matériau supérieur des trois élémentaires est le mithril, celui du mithril est l'orichalque bleu. Chaque objet affiche ce que sa fonte rendrait.
 
+**Joyaux.** Chaque boss battu lâche un joyau, et les autres ennemis en lâchent un de rang C de temps en temps. Comme les matériaux, ils sont perdus si Grid est battu avant de rentrer. Ils ne prennent pas de place dans l'inventaire.
+
+| Joyau | Rang C | Rang B | Rang S |
+|---|---|---|---|
+| Rubis | +8 % d'attaque | +15 % | +25 % |
+| Saphir | +10 PV | +20 PV | +35 PV |
+| Émeraude | +3 PV par ennemi battu | +6 PV | +10 PV |
+
+Le rang dépend de la zone du boss : C dans le canyon, B possible chez le comte Ashur, S possible à partir du temple de Yatan. Un objet Rare ou Épique a un emplacement, un Unique deux, un Légendaire ou un Mythique trois ; un objet Normal n'en a pas. Le bouton Sertir de l'inventaire pose ou retire les joyaux librement, et fondre un objet les rend. Les joyaux de tout ce que Grid porte s'additionnent.
+
 Équipe trois armes et une armure. Ce que Grid équipe se voit sur lui : il commence en T-shirt blanc, porte le plastron ou le bouclier forgé (aux couleurs de son matériau), garde ses deux autres armes dans le dos en expédition, et les accroche au mur de l'atelier. Sans arme, Grid se bat avec son marteau de forge : on n'est jamais bloqué.
 
 **Album.** Une case par plan et par matériau (48), avec la meilleure rareté forgée.

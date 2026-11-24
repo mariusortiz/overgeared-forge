@@ -67,6 +67,7 @@ jobs:
           # The title, every screen, then the game playing by itself: forges, and runs in the mine
           # (a strong set, a beginner's set, and no weapon at all).
           godot --headless --fixed-fps 60 --quit-after 120 -- --test 2>&1 | tee -a run.log
+          godot --headless --fixed-fps 60 --quit-after 120 -- --test --demo --screen=armory --jewels 2>&1 | tee -a run.log
           for screen in forge combat armory album; do
             godot --headless --fixed-fps 60 --quit-after 120 -- --test --demo --screen=$screen 2>&1 | tee -a run.log
           done

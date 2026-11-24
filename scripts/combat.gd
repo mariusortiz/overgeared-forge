@@ -34,6 +34,8 @@ var _target := 0
 var _enemies: Array = []
 var _enemy_turn := 0
 var _loot := {}
+var _jewels := {}
+var _kill_heal := 0.0
 var _new_plan := ""
 var _rng := RandomNumberGenerator.new()
 
@@ -86,10 +88,15 @@ func _begin(level: int) -> void:
 	for armor in Save.equipped_items("armor"):
 		_hero_max += armor.hp
 		_block += Catalog.PLANS[armor.plan].block
+	# The jewels of everything equipped add up.
+	var bonus := Catalog.jewel_bonus(Save.equipped_items("weapon") + Save.equipped_items("armor"))
+	_hero_max += bonus.hp
+	_kill_heal = bonus.heal
 	_hero_hp = _hero_max
-	_attack_bonus = 1.0
+	_attack_bonus = 1.0 + bonus.attack / 100.0
 	_guard = 1.0
 	_loot = {}
+	_jewels = {}
 	_slots = []
 	for weapon in Save.equipped_items("weapon"):
 		_slots.append(weapon.duplicate())
@@ -268,6 +275,9 @@ func _hit_enemy(index: int, weapon: Dictionary, power: float) -> float:
 		sprite.fall()
 		flash.tween_property(sprite, "modulate:a", 0.0, 0.3).set_delay(0.45)
 		_drop(enemy)
+		if _kill_heal > 0.0 and _hero_hp < _hero_max:
+			_hero_hp = minf(_hero_max, _hero_hp + _kill_heal)
+			UI.float_text(self, "+%d" % roundi(_kill_heal), HERO_AT + Vector2(-34, -30), UI.GOOD)
 	return damage
 
 
@@ -281,6 +291,10 @@ func _drop(enemy: Dictionary) -> void:
 		var found := Catalog.roll_material(tier, _rng)
 		_loot[found] = int(_loot.get(found, 0)) + 1
 		UI.float_text(self, "+1 " + Catalog.MATERIALS[found].short, enemy.sprite.position + Vector2(-20, -20 + i * 18), Catalog.MATERIALS[found].light)
+	if enemy.boss or _rng.randf() < Catalog.JEWEL_CHANCE:
+		var jewel := Catalog.roll_jewel(Catalog.depth_tier(_floor), enemy.boss, _rng)
+		_jewels[jewel] = int(_jewels.get(jewel, 0)) + 1
+		UI.float_text(self, "+1 " + Catalog.jewel_name(jewel), enemy.sprite.position + Vector2(-20, -44), Catalog.jewel_kind(jewel).color, UI.BIG)
 	_refresh_carried()
 
 
@@ -378,11 +392,13 @@ func _finish(safe: bool) -> void:
 	_phase = OVER
 	main.lock_tabs(false)
 	var cleared := _floor if safe else _floor - 1
-	print("MINE start=%d cleared=%d result=%s hp=%d loot=%s" % [_start_floor, cleared, "left" if safe else "beaten", roundi(_hero_hp), _loot])
+	print("MINE start=%d cleared=%d result=%s hp=%d loot=%s jewels=%s" % [_start_floor, cleared, "left" if safe else "beaten", roundi(_hero_hp), _loot, _jewels])
 	var text := ""
 	if safe:
 		for id in _loot:
 			Save.add_material(id, _loot[id])
+		for id in _jewels:
+			Save.add_jewel(id, _jewels[id])
 		Sfx.play("leave")
 		text = "RETOUR À LA FORGE\n\nButin rapporté : %s\n\nÉtape atteinte : %d  ·  record : %d" % [_loot_text(_loot), cleared, Save.best_floor]
 	else:
@@ -401,12 +417,12 @@ func _finish(safe: bool) -> void:
 
 # --- Helpers ---------------------------------------------------------------
 
+## Everything carried, materials then jewels, as a sentence.
 func _loot_text(loot: Dictionary) -> String:
-	var parts := []
-	for id in Catalog.MATERIAL_ORDER:
-		if int(loot.get(id, 0)) > 0:
-			parts.append("%s %d" % [Catalog.MATERIALS[id].short, loot[id]])
-	return "rien" if parts.is_empty() else ", ".join(parts)
+	var jewels := Catalog.jewels_text(_jewels)
+	if jewels == "":
+		return Catalog.materials_text(loot)
+	return jewels if loot.is_empty() else Catalog.materials_text(loot) + ", " + jewels
 
 
 func _refresh_carried() -> void:

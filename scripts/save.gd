@@ -10,6 +10,8 @@ var materials := {}
 var items: Array = []
 var equipped: Array = []
 var plans: Array = []
+## Jewels not set into an item: {"ruby:0": count}.
+var jewels := {}
 var album := {}
 ## The deepest floor ever cleared in the mine.
 var best_floor := 0
@@ -33,6 +35,7 @@ func reset() -> void:
 	items = []
 	equipped = []
 	plans = Catalog.START_PLANS.duplicate()
+	jewels = {}
 	album = {}
 	best_floor = 0
 	next_uid = 1
@@ -62,7 +65,7 @@ func add_item(plan: String, material: String, rarity: int, score: float) -> Dict
 	var weapon: bool = Catalog.PLANS[plan].slot == "weapon"
 	var item := {
 		"uid": next_uid, "plan": plan, "material": material, "rarity": rarity, "score": roundi(score),
-		"attack": value if weapon else 0, "hp": 0 if weapon else value,
+		"attack": value if weapon else 0, "hp": 0 if weapon else value, "jewels": [],
 	}
 	next_uid += 1
 	items.append(item)
@@ -74,6 +77,34 @@ func add_item(plan: String, material: String, rarity: int, score: float) -> Dict
 	album[key] = maxi(rarity, int(album.get(key, -1)))
 	store()
 	return item
+
+
+func jewel_count(id: String) -> int:
+	return int(jewels.get(id, 0))
+
+
+func add_jewel(id: String, count: int) -> void:
+	jewels[id] = jewel_count(id) + count
+	store()
+
+
+func free_sockets(item: Dictionary) -> int:
+	return Catalog.SOCKETS[item.rarity] - item.jewels.size()
+
+
+## Moves a jewel from the stock into an item.
+func set_jewel(item: Dictionary, id: String) -> void:
+	if jewel_count(id) > 0 and free_sockets(item) > 0:
+		item.jewels.append(id)
+		add_jewel(id, -1)
+
+
+## Takes every jewel out of an item, back into the stock.
+func take_jewels(item: Dictionary) -> void:
+	for id in item.jewels:
+		jewels[id] = jewel_count(id) + 1
+	item.jewels = []
+	store()
 
 
 func capacity() -> int:
@@ -88,6 +119,7 @@ func remove_item(uid: int) -> void:
 	equipped.erase(uid)
 	for item in items:
 		if item.uid == uid:
+			take_jewels(item)
 			items.erase(item)
 			break
 	store()
@@ -138,7 +170,7 @@ func store() -> void:
 	if file == null:
 		return
 	file.store_string(JSON.stringify({
-		"materials": materials, "items": items, "equipped": equipped, "plans": plans,
+		"materials": materials, "items": items, "equipped": equipped, "plans": plans, "jewels": jewels,
 		"album": album, "best_floor": best_floor, "next_uid": next_uid,
 	}))
 
@@ -160,8 +192,12 @@ func _load() -> void:
 				"uid": int(saved.uid), "plan": saved.plan, "material": saved.material,
 				"rarity": int(saved.rarity), "score": int(saved.score),
 				"attack": int(saved.get("attack", 0)), "hp": int(saved.get("hp", 0)),
+				"jewels": saved.get("jewels", []).filter(func(id): return id in Catalog.all_jewels()),
 			})
 			learn(saved.plan)
+	for id in data.get("jewels", {}):
+		if id in Catalog.all_jewels():
+			jewels[id] = int(data.jewels[id])
 	for uid in data.get("equipped", []):
 		equipped.append(int(uid))
 	for plan in data.get("plans", []):

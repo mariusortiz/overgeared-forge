@@ -86,6 +86,25 @@ const INVENTORY_MAX := 14
 ## better material]. Never more than the three units the forge took.
 const MELT := [[1, 0], [1, 0], [2, 0], [1, 1], [1, 2], [1, 2]]
 
+# --- Jewels ----------------------------------------------------------------
+
+## Jewels are set into items. The jewels of everything Grid has equipped add up.
+## effect: "attack" (% of attack), "hp" (hit points), "heal" (hit points given
+## back for each enemy beaten). values: one for each grade.
+const JEWELS := {
+	"ruby": {"name": "Rubis", "color": Color("ff4d5e"), "effect": "attack", "values": [8, 15, 25], "text": "+%d %% d'attaque"},
+	"sapphire": {"name": "Saphir", "color": Color("4d8dff"), "effect": "hp", "values": [10, 20, 35], "text": "+%d PV"},
+	"emerald": {"name": "Émeraude", "color": Color("3ddc84"), "effect": "heal", "values": [3, 6, 10], "text": "+%d PV par ennemi battu"},
+}
+const JEWEL_ORDER := ["ruby", "sapphire", "emerald"]
+const JEWEL_GRADES := ["C", "B", "S"]
+## How many jewels an item can hold, by rarity.
+const SOCKETS := [0, 1, 1, 2, 3, 3]
+## A boss always drops a jewel; its grade is drawn with these weights [C, B, S],
+## one line for each zone. Other enemies drop a grade C jewel now and then.
+const BOSS_JEWELS := [[100, 0, 0], [60, 40, 0], [30, 50, 20], [0, 50, 50]]
+const JEWEL_CHANCE := 0.04
+
 const HERO_NAME := "Grid"
 const HERO_SPRITE := "grid"
 const HERO_HP := 120
@@ -232,6 +251,67 @@ static func materials_text(amounts: Dictionary) -> String:
 
 static func album_key(plan: String, material: String) -> String:
 	return plan + ":" + material
+
+
+# --- Jewels' rules ----------------------------------------------------------
+
+## A jewel is written "kind:grade", for example "ruby:1" for a grade B ruby.
+static func jewel_id(kind: String, grade: int) -> String:
+	return "%s:%d" % [kind, grade]
+
+
+static func jewel_kind(id: String) -> Dictionary:
+	return JEWELS[id.get_slice(":", 0)]
+
+
+static func jewel_grade(id: String) -> int:
+	return int(id.get_slice(":", 1))
+
+
+static func jewel_name(id: String) -> String:
+	return "%s %s" % [jewel_kind(id).name, JEWEL_GRADES[jewel_grade(id)]]
+
+
+static func jewel_effect(id: String) -> String:
+	var kind := jewel_kind(id)
+	return kind.text % kind.values[jewel_grade(id)]
+
+
+## Every jewel there is, in the order they are listed.
+static func all_jewels() -> Array:
+	var list := []
+	for kind in JEWEL_ORDER:
+		for grade in JEWEL_GRADES.size():
+			list.append(jewel_id(kind, grade))
+	return list
+
+
+static func roll_jewel(tier: int, boss: bool, rng: RandomNumberGenerator) -> String:
+	var grade := 0
+	if boss:
+		var weights: Array = BOSS_JEWELS[clampi(tier, 0, BOSS_JEWELS.size() - 1)]
+		var pick: float = rng.randf() * (weights[0] + weights[1] + weights[2])
+		grade = 0 if pick < weights[0] else (1 if pick < weights[0] + weights[1] else 2)
+	return jewel_id(JEWEL_ORDER[rng.randi() % JEWEL_ORDER.size()], grade)
+
+
+## What the jewels of a list of items add up to: {"attack": %, "hp": n, "heal": n}.
+static func jewel_bonus(items: Array) -> Dictionary:
+	var total := {"attack": 0, "hp": 0, "heal": 0}
+	for item in items:
+		for id in item.get("jewels", []):
+			var kind := jewel_kind(id)
+			total[kind.effect] += kind.values[jewel_grade(id)]
+	return total
+
+
+## A list of jewels as a sentence: "Rubis C 2, Saphir B 1".
+static func jewels_text(amounts: Dictionary) -> String:
+	var parts := []
+	for id in all_jewels():
+		if int(amounts.get(id, 0)) > 0:
+			parts.append("%s %d" % [jewel_name(id), amounts[id]])
+	return ", ".join(parts)
 
 
 # --- The mine's rules ------------------------------------------------------

@@ -9,6 +9,7 @@ extends Control
 ##   --basic     starts with what six iron give: two average iron weapons
 ##   --mid       starts with a mid-game set (elemental weapons, a shield)
 ##   --floor=6   with --auto, the stage the expedition starts at
+##   --jewels    with --screen=armory, opens the jewel panel of an item
 ##   --wait      with --auto, the forge waits on its GO button (for pictures)
 ##   --deep      with --auto, never comes back: goes on until beaten
 ##   --test      does not read or write the save file
@@ -141,3 +142,6 @@ func _fill_demo() -> void:
 	Save.add_item("sword", "iron", 0, 31)
 	Save.add_item("shield", "storm", 2, 66)
 	Save.add_item("dagger", "orichalcum", 5, 97)
+	Save.jewels = {"ruby:0": 2, "sapphire:1": 1, "emerald:2": 1}
+	Save.set_jewel(Save.items[2], "ruby:0")
+	Save.set_jewel(Save.items[0], "sapphire:1")
