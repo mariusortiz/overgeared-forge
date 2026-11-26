@@ -41,24 +41,23 @@ const MATERIAL_ORDER := ["iron", "ember", "frost", "storm", "mithril", "orichalc
 const MYTH_MATERIAL := "orichalcum"
 
 ## Weapons have an attack and a skill; armours have hit points and may block.
-## worn: a sheet of assets/lpc drawn over Grid when he wears the armour; without
-## it, the armour's picture is shown on his arm, like a shield.
+## Their 3D models are in data/models.gd, under the same names.
 ## Skill kinds: "single" one enemy, "double" two hits, "all" every enemy,
 ## "stun" the enemy misses its next attack, "drain" half the damage heals Grid.
 const PLANS := {
-	"sword": {"name": "Épée", "slot": "weapon", "sprite": "sword5", "attack": 12,
+	"sword": {"name": "Épée", "slot": "weapon", "attack": 12,
 		"skill": {"name": "Taillade", "kind": "single", "power": 2.0, "cooldown": 2}},
-	"dagger": {"name": "Dague", "slot": "weapon", "sprite": "dagger3", "attack": 9,
+	"dagger": {"name": "Dague", "slot": "weapon", "attack": 9,
 		"skill": {"name": "Double frappe", "kind": "double", "power": 1.1, "cooldown": 2}},
-	"spear": {"name": "Lance", "slot": "weapon", "sprite": "spear1", "attack": 10,
+	"spear": {"name": "Lance", "slot": "weapon", "attack": 10,
 		"skill": {"name": "Percée", "kind": "all", "power": 0.9, "cooldown": 2}},
-	"shield": {"name": "Bouclier", "slot": "shield", "sprite": "shield", "hp": 12, "block": 0.15},
-	"axe": {"name": "Hache", "slot": "weapon", "sprite": "axe3", "attack": 14,
+	"shield": {"name": "Bouclier", "slot": "shield", "hp": 12, "block": 0.15},
+	"axe": {"name": "Hache", "slot": "weapon", "attack": 14,
 		"skill": {"name": "Fendoir", "kind": "single", "power": 3.0, "cooldown": 4}},
-	"plate": {"name": "Plastron", "slot": "armor", "sprite": "plate", "hp": 25, "block": 0.0, "worn": "armor_plate"},
-	"hammer": {"name": "Marteau", "slot": "weapon", "sprite": "hammer1", "attack": 13,
+	"plate": {"name": "Plastron", "slot": "armor", "hp": 25, "block": 0.0},
+	"hammer": {"name": "Marteau", "slot": "weapon", "attack": 13,
 		"skill": {"name": "Choc", "kind": "stun", "power": 1.5, "cooldown": 3}},
-	"scythe": {"name": "Faux", "slot": "weapon", "sprite": "scythe1", "attack": 12,
+	"scythe": {"name": "Faux", "slot": "weapon", "attack": 12,
 		"skill": {"name": "Moisson", "kind": "drain", "power": 1.8, "cooldown": 3}},
 }
 ## The order of the forge and the album. The first START_PLANS are known from the
@@ -107,7 +106,6 @@ const BOSS_JEWELS := [[100, 0, 0], [60, 40, 0], [30, 50, 20], [0, 50, 50]]
 const JEWEL_CHANCE := 0.04
 
 const HERO_NAME := "Grid"
-const HERO_SPRITE := "grid"
 const HERO_HP := 120
 ## Without any weapon, Grid fights with his forge hammer.
 const BARE_WEAPON := {"uid": 0, "plan": "hammer", "material": "iron", "rarity": 0, "attack": 6, "bare": true}
@@ -139,32 +137,31 @@ const FLOOR_GROWTH := 1.1
 ## How many enemies on the floors before a boss.
 const FLOOR_SIZES := [2, 2, 3, 3]
 
-## sprite: a character of assets/lpc (see tools/build_lpc.py);
-## weapon: a picture of assets/weapons, held in hand.
+## Each enemy has a 3D character of the same name in data/models.gd.
 ## parry: the rhythm of its attack, [seconds the ring takes to close, style].
 ## The shorter, the harder; bosses are fast and tricky.
 const ENEMIES := {
-	"goblin": {"name": "Gobelin", "sprite": "goblin", "weapon": "mace2", "hp": 22, "attack": 3, "weak": "fire", "parry": [0.9, "steady"]},
-	"skeleton": {"name": "Squelette", "sprite": "skeleton", "weapon": "sword1", "hp": 24, "attack": 4, "weak": "lightning", "parry": [0.8, "steady"]},
-	"orc": {"name": "Orc", "sprite": "orc", "weapon": "axe1", "hp": 32, "attack": 5, "weak": "ice", "parry": [1.0, "rush"]},
-	"soldier": {"name": "Soldat d'Ashur", "sprite": "soldier", "weapon": "spear2", "hp": 28, "attack": 5, "weak": "ice", "parry": [0.8, "steady"]},
-	"mercenary": {"name": "Mercenaire", "sprite": "mercenary", "weapon": "dagger1", "hp": 26, "attack": 6, "weak": "fire", "parry": [0.6, "steady"]},
-	"knight": {"name": "Chevalier d'Ashur", "sprite": "knight", "weapon": "sword3", "hp": 42, "attack": 5, "weak": "lightning", "parry": [1.0, "rush"]},
-	"cultist": {"name": "Adepte de Yatan", "sprite": "cultist", "weapon": "dagger5", "hp": 30, "attack": 7, "weak": "ice", "parry": [0.7, "steady"]},
-	"zealot": {"name": "Fanatique", "sprite": "zealot", "weapon": "mace1", "hp": 34, "attack": 8, "weak": "fire", "parry": [0.9, "rush"]},
-	"dark_priest": {"name": "Prêtre noir", "sprite": "dark_priest", "weapon": "staff1", "hp": 28, "attack": 9, "weak": "lightning", "parry": [1.0, "feint"]},
-	"rival": {"name": "Joueur rival", "sprite": "rival", "weapon": "sword1", "hp": 44, "attack": 8, "weak": "fire", "parry": [0.7, "feint"]},
-	"orc_chief": {"name": "Chef orc", "sprite": "orc_chief", "weapon": "axe4", "hp": 160, "attack": 9, "weak": "fire", "parry": [0.75, "rush"], "boss": true},
-	"captain": {"name": "Capitaine d'Ashur", "sprite": "captain", "weapon": "sword3", "hp": 170, "attack": 10, "weak": "lightning", "parry": [0.65, "feint"], "boss": true},
-	"malacus": {"name": "Malacus", "sprite": "malacus", "weapon": "staff3", "hp": 180, "attack": 11, "weak": "ice", "parry": [0.6, "feint"], "boss": true},
+	"goblin": {"name": "Gobelin", "hp": 22, "attack": 3, "weak": "fire", "parry": [0.9, "steady"]},
+	"skeleton": {"name": "Squelette", "hp": 24, "attack": 4, "weak": "lightning", "parry": [0.8, "steady"]},
+	"orc": {"name": "Orc", "hp": 32, "attack": 5, "weak": "ice", "parry": [1.0, "rush"]},
+	"soldier": {"name": "Soldat d'Ashur", "hp": 28, "attack": 5, "weak": "ice", "parry": [0.8, "steady"]},
+	"mercenary": {"name": "Mercenaire", "hp": 26, "attack": 6, "weak": "fire", "parry": [0.6, "steady"]},
+	"knight": {"name": "Chevalier d'Ashur", "hp": 42, "attack": 5, "weak": "lightning", "parry": [1.0, "rush"]},
+	"cultist": {"name": "Adepte de Yatan", "hp": 30, "attack": 7, "weak": "ice", "parry": [0.7, "steady"]},
+	"zealot": {"name": "Fanatique", "hp": 34, "attack": 8, "weak": "fire", "parry": [0.9, "rush"]},
+	"dark_priest": {"name": "Prêtre noir", "hp": 28, "attack": 9, "weak": "lightning", "parry": [1.0, "feint"]},
+	"rival": {"name": "Joueur rival", "hp": 44, "attack": 8, "weak": "fire", "parry": [0.7, "feint"]},
+	"orc_chief": {"name": "Chef orc", "hp": 160, "attack": 9, "weak": "fire", "parry": [0.75, "rush"], "boss": true},
+	"captain": {"name": "Capitaine d'Ashur", "hp": 170, "attack": 10, "weak": "lightning", "parry": [0.65, "feint"], "boss": true},
+	"malacus": {"name": "Malacus", "hp": 180, "attack": 11, "weak": "ice", "parry": [0.6, "feint"], "boss": true},
 }
 ## One zone for every BOSS_EVERY floors; the last one serves for all deeper floors.
-## backdrop: a picture of assets/lpc/backdrops (see tools/build_backdrops.py).
+## backdrop: a decor of scripts/scenery.gd.
 const ZONES := [
 	{"name": "Canyon de Kesan", "backdrop": "canyon", "enemies": ["goblin", "skeleton", "orc"]},
 	{"name": "Terres du comte Ashur", "backdrop": "castle", "enemies": ["soldier", "mercenary", "knight"]},
 	{"name": "Temple de Yatan", "backdrop": "temple", "enemies": ["cultist", "zealot", "dark_priest"]},
-	{"name": "Profondeurs", "backdrop": "temple", "enemies": ["rival", "knight", "dark_priest", "orc"]},
+	{"name": "Profondeurs", "backdrop": "depths", "enemies": ["rival", "knight", "dark_priest", "orc"]},
 ]
 const BOSSES := ["orc_chief", "captain", "malacus"]
 

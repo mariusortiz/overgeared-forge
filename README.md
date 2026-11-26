@@ -1,6 +1,6 @@
 # Overgeared Forge
 
-Jeu de forge et de collection en pixel art, pour navigateur et Android. Tu joues Grid, le forgeron : tu forges des armes en trois gestes, leur rareté dépend de ton adresse, et tu pars en expédition avec pour rapporter de meilleurs matériaux. Fait avec [Godot](https://godotengine.org) 4.7.
+Jeu de forge et de collection en 3D « chibi », pour navigateur et Android. Tu joues Grid, le forgeron : tu forges des armes en trois gestes, leur rareté dépend de ton adresse, et tu pars en expédition avec pour rapporter de meilleurs matériaux. Fait avec [Godot](https://godotengine.org) 4.7.
 
 Jeu de fans gratuit et non officiel, inspiré de l'anime *Overgeared*. Voir [CREDITS.md](CREDITS.md).
 
@@ -99,14 +99,26 @@ Tout le contenu est dans [data/catalog.gd](data/catalog.gd) : raretés, matéria
 
 ## Personnages et décors
 
-Les personnages viennent du [générateur de personnages LPC](https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/) : chacun est une pile de couches (corps, tête, coiffure, vêtements) recolorées. Pour en modifier un ou en ajouter, change la liste `CHARACTERS` de [tools/build_lpc.py](tools/build_lpc.py), puis :
+Les scènes sont en 3D, avec les modèles [KayKit](https://github.com/KayKit-Game-Assets) de Kay Lousberg (domaine public, CC0). Le reste du jeu est en 2D : chaque scène 3D est affichée comme une image ([scripts/stage3d.gd](scripts/stage3d.gd)), vue de haut sans perspective, si bien qu'un point de l'écran correspond à un point du sol.
+
+| Fichier | Rôle |
+|---|---|
+| `data/models.gd` | Quel modèle, quelles couleurs et quelle arme pour chaque personnage ; les armes en 3D |
+| `scripts/actor.gd` | Un personnage animé (repos, attaque, parade, chute) |
+| `scripts/scenery.gd` | Les décors de la forge et des quatre zones |
+| `tools/build_kaykit.py` | Copie les modèles utiles et repeint les couleurs des personnages (`SKINS`) |
+
+Chaque personnage est un des sept modèles du pack, repeint : la texture d'un modèle est une grille de 32 pastilles de couleur, et `SKINS` dit lesquelles changer (la peau en vert pour un orc, les cheveux en brun pour Grid). Après une modification :
 
 ```sh
-python3 tools/build_lpc.py          # refait assets/lpc/*.png et CREDITS-LPC.md
-python3 tools/build_backdrops.py    # refait les décors de assets/lpc/backdrops
+python3 tools/build_kaykit.py                                      # refait assets/kaykit
+godot --path . res://tools/gallery/icons.tscn -- --test            # refait les images d'armes des menus
+godot --path . res://tools/gallery/gallery.tscn -- --test --show=characters   # planche de contrôle
 ```
 
-Il faut Python avec Pillow, et `curl`. Un nouvel ennemi se déclare ensuite dans `ENEMIES` de `data/catalog.gd`, avec le nom de son image et celui de l'arme qu'il tient.
+Il faut Python avec Pillow, et `git`. Un nouvel ennemi se déclare dans `ENEMIES` de `data/catalog.gd` et, sous le même nom, dans `CHARACTERS` de `data/models.gd`.
+
+Les anciennes images en pixel art (`assets/lpc`, `assets/weapons`) ne sont plus affichées par le jeu, sauf l'icône.
 
 ## Lancer et vérifier
 

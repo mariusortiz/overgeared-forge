@@ -15,7 +15,7 @@ const HERO_AT := Vector2(84, 246)
 const ENEMY_SPOTS := {
 	1: [Vector2(268, 246)],
 	2: [Vector2(244, 200), Vector2(292, 296)],
-	3: [Vector2(236, 176), Vector2(300, 246), Vector2(240, 316)],
+	3: [Vector2(226, 172), Vector2(306, 242), Vector2(236, 322)],
 }
 ## With --auto, the game goes back up below this share of its hit points.
 const AUTO_LEAVE := 0.3
@@ -51,7 +51,8 @@ var _new_plan := ""
 var _rng := RandomNumberGenerator.new()
 
 var _field: Node2D
-var _backdrop: Sprite2D
+var _stage: Stage3D
+var _decor := ""
 var _hero: Actor
 var _title: Label
 var _carried: Label
@@ -120,11 +121,9 @@ func _begin(level: int) -> void:
 
 	_field = Node2D.new()
 	add_child(_field)
-	_backdrop = Sprite2D.new()
-	_backdrop.centered = false
-	_backdrop.scale = Vector2(2, 2)
-	_field.add_child(_backdrop)
-	_hero = Actor.make_hero(false, 2.0)
+	_stage = Stage3D.make(Vector2(360, 400), 46.0)
+	_field.add_child(_stage)
+	_hero = Actor.make_hero(_stage, false, 2.0)
 	_hero.position = HERO_AT
 	_field.add_child(_hero)
 
@@ -135,9 +134,14 @@ func _begin(level: int) -> void:
 	add_child(_bars)
 	_title = UI.label("", UI.BODY, UI.GOLD)
 	_title.position = Vector2(8, 4)
+	for label in [_title]:
+		label.add_theme_color_override("font_outline_color", UI.INK)
+		label.add_theme_constant_override("outline_size", 4)
 	add_child(_title)
 	_carried = UI.label("", UI.SMALL, UI.TEXT)
 	_carried.position = Vector2(8, 28)
+	_carried.add_theme_color_override("font_outline_color", UI.INK)
+	_carried.add_theme_constant_override("outline_size", 4)
 	add_child(_carried)
 	_hint = UI.centered("", UI.BODY, UI.GOLD, 360.0)
 	_hint.position = Vector2(0, 74)
@@ -167,19 +171,20 @@ func _enter_floor(level: int) -> void:
 	for i in ids.size():
 		var info: Dictionary = Catalog.ENEMIES[ids[i]]
 		var boss: bool = info.get("boss", false)
-		var sprite := Actor.make(info.sprite, true, 3.0 if boss else 2.0)
-		sprite.hold(UI.picture(info.weapon), UI.weapon_material("iron", 0))
+		var sprite := Actor.make(_stage, ids[i], true, 3.0 if boss else 2.0)
 		sprite.position = ENEMY_SPOTS[ids.size()][i]
 		_field.add_child(sprite)
-		sprite.modulate.a = 0.0
-		create_tween().tween_property(sprite, "modulate:a", 1.0, 0.3)
+		sprite.scale = Vector2(0.01, 0.01)
+		create_tween().tween_property(sprite, "scale", Vector2.ONE, 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		_enemies.append({
 			"id": ids[i], "name": info.name, "hp": info.hp * strength, "max": info.hp * strength,
 			"attack": info.attack * strength, "weak": info.weak, "sprite": sprite, "boss": boss, "stunned": false,
 		})
 	_target = 0
 	var zone := Catalog.zone(level)
-	_backdrop.texture = load("res://assets/lpc/backdrops/%s.png" % zone.backdrop)
+	if zone.backdrop != _decor:
+		_decor = zone.backdrop
+		Scenery.build(_stage, _decor)
 	_title.text = "Étape %d  ·  %s" % [level, "BOSS : " + _enemies[0].name if Catalog.is_boss_floor(level) else zone.name]
 	_refresh_carried()
 	_refresh_slots()
@@ -346,13 +351,12 @@ func _hit_enemy(index: int, weapon: Dictionary, power: float) -> float:
 	var color: Color = Catalog.ELEMENTS[element].color
 	UI.float_text(self, str(roundi(damage)) + ("!" if weak else ""), sprite.position + Vector2(0, -78), color, UI.BIG if weak else UI.BODY)
 	UI.sparks(_field, sprite.position, color, 8)
-	var flash := sprite.create_tween()
-	flash.tween_property(sprite, "modulate", Color(3, 3, 3), 0.05)
-	flash.tween_property(sprite, "modulate", Color.WHITE, 0.15)
 	if enemy.hp <= 0:
 		sprite.fall()
-		flash.tween_property(sprite, "modulate:a", 0.0, 0.3).set_delay(0.45)
+		sprite.create_tween().tween_property(sprite, "scale", Vector2(0.01, 0.01), 0.3).set_delay(1.1)
 		_drop(enemy)
+	else:
+		sprite.hurt()
 		if _kill_heal > 0.0 and _hero_hp < _hero_max:
 			_hero_hp = minf(_hero_max, _hero_hp + _kill_heal)
 			UI.float_text(self, "+%d" % roundi(_kill_heal), HERO_AT + Vector2(-34, -30), UI.GOOD)
@@ -418,13 +422,14 @@ func _enemy_hit(enemy: Dictionary, grade: int) -> void:
 	var lunge := sprite.create_tween()
 	lunge.tween_property(sprite, "position:x", home.x - 30, 0.1)
 	lunge.tween_property(sprite, "position:x", home.x, 0.2)
-	var flash := _hero.create_tween()
-	flash.tween_property(_hero, "modulate", Color(2.5, 0.6, 0.6), 0.05)
-	flash.tween_property(_hero, "modulate", Color.WHITE, 0.2)
 	if _hero_hp <= 0:
 		_hero.fall()
 		_finish(false)
 	else:
+		if grade > 0:
+			_hero.block()
+		else:
+			_hero.hurt()
 		_timer = 0.45
 
 
@@ -551,12 +556,12 @@ func _slot_icon(weapon: Dictionary) -> TextureRect:
 func _refresh_slots() -> void:
 	UI.clear(_slot_row)
 	var held: Dictionary = _slots[_active]
-	_hero.hold(UI.weapon_texture(held.plan), UI.weapon_material(held.material, held.rarity))
+	_hero.hold(held.plan, held.material, held.rarity)
 	# The other weapons wait on his back.
 	var others := []
 	for index in _slots.size():
 		if index != _active:
-			others.append([UI.weapon_texture(_slots[index].plan), UI.weapon_material(_slots[index].material, _slots[index].rarity)])
+			others.append(_slots[index])
 	_hero.carry(others)
 	for index in _slots.size():
 		var weapon: Dictionary = _slots[index]
@@ -616,7 +621,9 @@ func _draw_bars() -> void:
 		if index == _target and _phase != OVER:
 			_bars.draw_rect(Rect2(at + Vector2(-4, -4), Vector2(104, 16)), UI.GOLD, false, 2.0)
 	_bar(Rect2(HERO_AT + Vector2(-60, 60), Vector2(120, 10)), _hero_hp / _hero_max, UI.GOOD)
-	_bars.draw_string(get_theme_default_font(), HERO_AT + Vector2(-60, 90), "%s  %d/%d" % [Catalog.HERO_NAME, roundi(_hero_hp), roundi(_hero_max)], HORIZONTAL_ALIGNMENT_CENTER, 120, UI.BODY, UI.TEXT)
+	var life := "%s  %d/%d" % [Catalog.HERO_NAME, roundi(_hero_hp), roundi(_hero_max)]
+	_bars.draw_string_outline(get_theme_default_font(), HERO_AT + Vector2(-60, 90), life, HORIZONTAL_ALIGNMENT_CENTER, 120, UI.BODY, 4, UI.INK)
+	_bars.draw_string(get_theme_default_font(), HERO_AT + Vector2(-60, 90), life, HORIZONTAL_ALIGNMENT_CENTER, 120, UI.BODY, UI.TEXT)
 	if _phase == PLAYER:
 		_bar(Rect2(8, 388, 344, 6), _timer / TURN_TIME, UI.GOLD)
 	# The timing ring: on the target when striking, on Grid when parrying.

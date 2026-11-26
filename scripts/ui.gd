@@ -68,7 +68,7 @@ static func weapon_material(material: String, rarity: int) -> ShaderMaterial:
 	var mat: Dictionary = Catalog.MATERIALS[material]
 	shader.set_shader_parameter("metal_dark", Vector3(mat.dark.r, mat.dark.g, mat.dark.b))
 	shader.set_shader_parameter("metal_light", Vector3(mat.light.r, mat.light.g, mat.light.b))
-	var outline := Color(0, 0, 0, 0)
+	var outline := INK
 	if rarity > 0:
 		outline = Catalog.RARITIES[rarity].color
 	shader.set_shader_parameter("outline", outline)
@@ -76,12 +76,7 @@ static func weapon_material(material: String, rarity: int) -> ShaderMaterial:
 
 
 static func weapon_texture(plan: String) -> Texture2D:
-	return picture(Catalog.PLANS[plan].sprite)
-
-
-## A picture of assets/weapons by its file name.
-static func picture(file: String) -> Texture2D:
-	return load("res://assets/weapons/%s.png" % file)
+	return load("res://assets/icons/%s.png" % plan)
 
 
 ## A centred label, wrapped to a width when one is given.
@@ -100,7 +95,9 @@ static func weapon_icon(plan: String, material: String, rarity: int, zoom := 2) 
 	icon.texture = weapon_texture(plan)
 	icon.material = weapon_material(material, rarity)
 	icon.custom_minimum_size = Vector2(32, 32) * zoom
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon.stretch_mode = TextureRect.STRETCH_SCALE
+	icon.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return icon
 

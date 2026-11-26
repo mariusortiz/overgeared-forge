@@ -1,157 +1,134 @@
 class_name Actor
 extends Node2D
-## A character drawn from a sheet of assets/lpc (made by tools/build_lpc.py):
-## it breathes, swings the weapon it holds, and falls. Grid also shows the armour
+## A character of the game. The 2D code moves this node on the picture of a
+## Stage3D; its 3D model (see data/models.gd) follows on the ground of the scene,
+## breathes, swings the weapon it holds, and falls. Grid also shows the armour
 ## he wears and the other weapons he carries.
 
-const SIZE := 64
-## Columns of the sheet: [first frame, number of frames].
-const IDLE := [0, 2]
-const SLASH := [2, 6]
-const HURT := [8, 6]
-## Where the hand is, from the middle of a frame, when facing right.
-const HAND := Vector2(9, 9)
-## Where a weapon picture is held (its handle), from its top left corner.
-const GRIP := Vector2(5, 27)
-const REST_ANGLE := -0.25
+## From this node down to the ground under the character's feet.
+const FEET := Vector2(0, 52)
+## Characters are turned a little towards the player.
+const TURN := deg_to_rad(62.0)
 
 var facing_left := false
+var model: Node3D
 
-var _body: Sprite2D
-var _atlas: AtlasTexture
-var _weapon: Sprite2D
-var _overlay_atlas: AtlasTexture
-var _shield: Sprite2D
-var _back: Node2D
-var _animation := IDLE
-var _time := 0.0
+var _stage: Stage3D
+var _player: AnimationPlayer
+var _skeleton: Skeleton3D
+var _hands := {}
+var _size := 1.0
+var _attack := "Unarmed_Melee_Attack_Punch_A"
+var _idle := "Idle"
 var _fallen := false
 
 
-static func make(character: String, left: bool, zoom: float) -> Actor:
+static func make(stage: Stage3D, character: String, left: bool, zoom: float) -> Actor:
 	var actor := Actor.new()
+	var info: Dictionary = Models.CHARACTERS[character]
+	actor._stage = stage
 	actor.facing_left = left
-	actor.scale = Vector2(zoom, zoom)
-	actor._back = Node2D.new()
-	actor.add_child(actor._back)
-	actor._atlas = AtlasTexture.new()
-	actor._atlas.atlas = load("res://assets/lpc/%s.png" % character)
-	actor._body = Sprite2D.new()
-	actor._body.texture = actor._atlas
-	actor.add_child(actor._body)
-	actor._weapon = Sprite2D.new()
-	actor._weapon.centered = false
-	actor._weapon.offset = -GRIP
-	actor._weapon.position = Vector2(-HAND.x if left else HAND.x, HAND.y)
-	actor._weapon.scale.x = -1.0 if left else 1.0
-	actor._weapon.rotation = actor._angle(REST_ANGLE)
-	actor.add_child(actor._weapon)
-	actor._show_frame(0)
+	actor._size = float(info.get("size", 1.0)) * zoom / 2.0
+	actor.model = Models.character(character)
+	actor.model.rotation.y = -TURN if left else TURN
+	actor.model.scale = Vector3.ONE * actor._size
+	stage.world.add_child(actor.model)
+	actor._player = actor.model.find_child("AnimationPlayer", true, false)
+	actor._skeleton = actor.model.find_child("Skeleton3D", true, false)
+	for name in ["Idle", "2H_Melee_Idle"]:
+		actor._player.get_animation(name).loop_mode = Animation.LOOP_LINEAR
+	actor._player.play("Idle")
+	# Not everybody breathes in step.
+	actor._player.seek(randf() * 1.0)
+	if info.has("weapon"):
+		actor.hold(info.weapon)
 	return actor
 
 
-## Grid as the save describes him: wearing the armour he has equipped.
-static func make_hero(left: bool, zoom: float) -> Actor:
-	var hero := make(Catalog.HERO_SPRITE, left, zoom)
-	for armor in Save.equipped_protection():
-		var shader := UI.weapon_material(armor.material, armor.rarity)
-		var plan: Dictionary = Catalog.PLANS[armor.plan]
-		if plan.has("worn"):
-			hero.wear(plan.worn, shader)
-		else:
-			hero.raise_shield(UI.weapon_texture(armor.plan), shader)
+## Grid as the save describes him: in the armour and with the shield he has equipped.
+static func make_hero(stage: Stage3D, left: bool, zoom: float) -> Actor:
+	var armors := Save.equipped_items("armor")
+	var hero := make(stage, "grid" if armors.is_empty() else "grid_armor", left, zoom)
+	if not armors.is_empty():
+		Models.dress(hero.model, armors[0].material, armors[0].rarity,
+			["Knight_Body", "Knight_ArmLeft", "Knight_ArmRight", "Knight_LegLeft", "Knight_LegRight"])
+	for shield in Save.equipped_items("shield"):
+		hero._put("handslot.l", [Models.weapon("shield", shield.material, shield.rarity)])
 	return hero
 
 
-## Draws another sheet over the body (an armour), frame for frame.
-func wear(sheet: String, shader: Material = null) -> void:
-	_overlay_atlas = AtlasTexture.new()
-	_overlay_atlas.atlas = load("res://assets/lpc/%s.png" % sheet)
-	_overlay_atlas.region = _atlas.region
-	var overlay := Sprite2D.new()
-	overlay.texture = _overlay_atlas
-	overlay.material = shader
-	add_child(overlay)
-	move_child(overlay, _body.get_index() + 1)
+## Puts a weapon in the character's hand: a key of Models.WEAPONS.
+func hold(weapon: String, material := "", rarity := 0) -> void:
+	var info: Dictionary = Models.WEAPONS[weapon]
+	_attack = info.attack
+	_idle = info.get("idle", "Idle")
+	_put("handslot.r", [Models.weapon(weapon, material, rarity)])
+	if not _fallen and _player.current_animation in ["Idle", "2H_Melee_Idle"]:
+		_player.play(_idle, 0.2)
 
 
-## Shows a small picture on the arm away from the weapon.
-func raise_shield(texture: Texture2D, shader: Material = null) -> void:
-	_shield = Sprite2D.new()
-	_shield.texture = texture
-	_shield.material = shader
-	_shield.scale = Vector2(0.55, 0.55)
-	_shield.position = Vector2(4 if facing_left else -4, 10)
-	add_child(_shield)
-	move_child(_shield, _weapon.get_index())
-
-
-## Shows weapons carried on the back: a list of [texture, shader].
-func carry(weapons: Array) -> void:
-	for child in _back.get_children():
-		child.queue_free()
-	for index in weapons.size():
-		var sprite := Sprite2D.new()
-		sprite.texture = weapons[index][0]
-		sprite.material = weapons[index][1]
-		sprite.centered = false
-		sprite.offset = -GRIP
-		# Mirrored, so that the blade rises behind the shoulder.
-		sprite.scale.x = 1.0 if facing_left else -1.0
-		sprite.position = Vector2(2 if facing_left else -2, 14)
-		sprite.rotation = _angle(0.15 + index * 0.5)
-		_back.add_child(sprite)
-
-
-## Puts a weapon in the character's hand (null to empty it).
-func hold(texture: Texture2D, shader: Material = null) -> void:
-	_weapon.texture = texture
-	_weapon.material = shader
+## Shows the other weapons on the back: a list of items of the save.
+func carry(items: Array) -> void:
+	var nodes := []
+	for index in items.size():
+		var weapon := Models.weapon(items[index].plan, items[index].material, items[index].rarity)
+		weapon.position = Vector3(0.12 - index * 0.24, -0.35, -0.32)
+		weapon.rotation_degrees = Vector3(0, 90, 160 + index * 40)
+		weapon.scale = Vector3.ONE * 0.85
+		nodes.append(weapon)
+	_put("chest", nodes)
 
 
 func attack() -> void:
-	if _fallen:
-		return
-	_animation = SLASH
-	_time = 0.0
-	var swing := create_tween()
-	swing.tween_property(_weapon, "rotation", _angle(-1.3), 0.12)
-	swing.tween_property(_weapon, "rotation", _angle(1.5), 0.14)
-	swing.tween_property(_weapon, "rotation", _angle(REST_ANGLE), 0.2)
+	_play(_attack)
+
+
+func hurt() -> void:
+	_play("Hit_A")
+
+
+func block() -> void:
+	_play("Block_Hit")
+
+
+func cheer() -> void:
+	_play("Cheer")
 
 
 func fall() -> void:
+	if _fallen:
+		return
 	_fallen = true
-	_animation = HURT
-	_time = 0.0
-	_weapon.visible = false
-	_back.visible = false
-	if _shield:
-		_shield.visible = false
+	_player.play("Death_A", 0.1)
 
 
-func _process(delta: float) -> void:
-	_time += delta
-	if _animation == IDLE:
-		_show_frame(IDLE[0] + int(_time / 0.6) % IDLE[1])
-	else:
-		var frame := int(_time / 0.07)
-		if frame >= _animation[1]:
-			if _fallen:
-				frame = _animation[1] - 1
-			else:
-				_animation = IDLE
-				_time = 0.0
-				frame = 0
-		_show_frame(_animation[0] + frame)
+func _play(animation: String) -> void:
+	if _fallen:
+		return
+	_player.play(animation, 0.12)
+	_player.queue(_idle)
 
 
-func _show_frame(column: int) -> void:
-	_atlas.region = Rect2(column * SIZE, SIZE if facing_left else 0, SIZE, SIZE)
-	if _overlay_atlas:
-		_overlay_atlas.region = _atlas.region
+## Replaces what is attached to a bone of the skeleton.
+func _put(bone: String, nodes: Array) -> void:
+	if not _hands.has(bone):
+		var hand := BoneAttachment3D.new()
+		hand.bone_name = bone
+		_skeleton.add_child(hand)
+		_hands[bone] = hand
+	for child in _hands[bone].get_children():
+		Models.discard(child)
+	for node in nodes:
+		_hands[bone].add_child(node)
 
 
-## Angles are given for a character facing right, and mirrored otherwise.
-func _angle(value: float) -> float:
-	return -value if facing_left else value
+func _process(_delta: float) -> void:
+	model.position = _stage.ground(_stage.to_local(global_position) + FEET)
+	model.visible = is_visible_in_tree()
+	# The 2D node's scale still counts: it lets the 2D code make a character pop in.
+	model.scale = Vector3.ONE * _size * scale.x
+
+
+func _exit_tree() -> void:
+	if is_instance_valid(model):
+		Models.discard(model)

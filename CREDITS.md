@@ -1,8 +1,23 @@
 # Crédits
 
-Les licences ne sont pas toutes les mêmes : les armes et les sons sont dans le domaine public (CC0), la police est sous OFL, et les personnages et décors LPC demandent de citer leurs auteurs et de garder la même licence.
+Les licences ne sont pas toutes les mêmes : les modèles 3D et les sons sont dans le domaine public (CC0), la police est sous OFL, et les images LPC demandent de citer leurs auteurs et de garder la même licence.
 
-## Personnages et décors (LPC)
+## Modèles 3D (KayKit)
+
+Tout ce qui est en 3D dans le jeu vient des packs de [Kay Lousberg](https://www.kaylousberg.com) (KayKit), sous licence CC0 :
+
+| Contenu | Pack | Emplacement |
+|---|---|---|
+| Grid et les ennemis humains | [Adventurers Character Pack](https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0) | `assets/kaykit/characters/`, `assets/kaykit/weapons/` |
+| Squelettes | [Skeletons Character Pack](https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Skeletons-1.0) | `assets/kaykit/characters/`, `assets/kaykit/weapons/` |
+| Forge, temple, profondeurs | [Dungeon Remastered](https://github.com/KayKit-Game-Assets/KayKit-Dungeon-Remastered-1.0) | `assets/kaykit/props/` |
+| Canyon, terres d'Ashur | [Medieval Hexagon Pack](https://github.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0) | `assets/kaykit/props/` |
+
+Les couleurs des personnages (`assets/kaykit/skins/`) sont repeintes par `tools/build_kaykit.py`. La lance, le marteau, la faux, le plastron, le fourneau et l'enclume sont des formes simples construites par le jeu. Les images d'armes des menus (`assets/icons/`) sont des rendus de ces modèles.
+
+## Anciennes images en pixel art (LPC)
+
+Ces images ne sont plus affichées par le jeu, sauf l'icône ; elles restent dans le dépôt avec leurs crédits.
 
 Les personnages de `assets/lpc/` sont assemblés à partir du [Universal LPC Spritesheet Character Generator](https://github.com/LiberatedPixelCup/Universal-LPC-Spritesheet-Character-Generator). La liste complète des auteurs, couche par couche, est dans [CREDITS-LPC.md](CREDITS-LPC.md). Ces images dérivées sont distribuées sous CC-BY-SA 3.0 (ou GPL 3.0).
 
