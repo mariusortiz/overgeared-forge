@@ -142,7 +142,7 @@ const FLOOR_SIZES := [2, 2, 3, 3]
 ## The shorter, the harder; bosses are fast and tricky.
 const ENEMIES := {
 	"goblin": {"name": "Gobelin", "hp": 22, "attack": 3, "weak": "fire", "parry": [0.9, "steady"]},
-	"skeleton": {"name": "Squelette", "hp": 24, "attack": 4, "weak": "lightning", "parry": [0.8, "steady"]},
+	"skeleton": {"name": "Revenant", "hp": 24, "attack": 4, "weak": "lightning", "parry": [0.8, "steady"]},
 	"orc": {"name": "Orc", "hp": 32, "attack": 5, "weak": "ice", "parry": [1.0, "rush"]},
 	"soldier": {"name": "Soldat d'Ashur", "hp": 28, "attack": 5, "weak": "ice", "parry": [0.8, "steady"]},
 	"mercenary": {"name": "Mercenaire", "hp": 26, "attack": 6, "weak": "fire", "parry": [0.6, "steady"]},

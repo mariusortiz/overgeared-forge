@@ -10,10 +10,10 @@ func _ready() -> void:
 			show = option.trim_prefix("--show=")
 		if option.begins_with("--capture="):
 			capture = option.trim_prefix("--capture=")
-	var stage := Stage3D.make(Vector2(360, 640), 40.0)
+	var stage := Stage3D.make(Vector2(360, 640), Vector3(0, 9.0, 16.0), 32.0, 30.0)
 	add_child(stage)
 	if show == "characters":
-		Scenery._plain(stage, Color("8a8f99"))
+		Scenery._ground(stage, "grass", Color.WHITE)
 		var ids := Models.CHARACTERS.keys()
 		for index in ids.size():
 			var actor := Actor.make(stage, ids[index], index % 2 == 1, 2.0)
@@ -24,7 +24,7 @@ func _ready() -> void:
 			label.position = actor.position + Vector2(-36, 58)
 			add_child(label)
 	elif show == "weapons":
-		Scenery._plain(stage, Color("8a8f99"))
+		Scenery._ground(stage, "sand", Color.WHITE)
 		var keys := Models.WEAPONS.keys()
 		var materials := Catalog.MATERIALS.keys()
 		for index in keys.size():

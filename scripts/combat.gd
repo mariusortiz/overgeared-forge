@@ -121,7 +121,7 @@ func _begin(level: int) -> void:
 
 	_field = Node2D.new()
 	add_child(_field)
-	_stage = Stage3D.make(Vector2(360, 400), 46.0)
+	_stage = Stage3D.make(Vector2(360, 400), Vector3(0, 6.0, 14.0), 24.0, 26.0)
 	_field.add_child(_stage)
 	_hero = Actor.make_hero(_stage, false, 2.0)
 	_hero.position = HERO_AT

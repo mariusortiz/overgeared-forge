@@ -1,6 +1,6 @@
 # Overgeared Forge
 
-Jeu de forge et de collection en 3D « chibi », pour navigateur et Android. Tu joues Grid, le forgeron : tu forges des armes en trois gestes, leur rareté dépend de ton adresse, et tu pars en expédition avec pour rapporter de meilleurs matériaux. Fait avec [Godot](https://godotengine.org) 4.7.
+Jeu de forge et de collection en 3D, pour navigateur et Android. Tu joues Grid, le forgeron : tu forges des armes en trois gestes, leur rareté dépend de ton adresse, et tu pars en expédition avec pour rapporter de meilleurs matériaux. Fait avec [Godot](https://godotengine.org) 4.7.
 
 Jeu de fans gratuit et non officiel, inspiré de l'anime *Overgeared*. Voir [CREDITS.md](CREDITS.md).
 
@@ -99,26 +99,29 @@ Tout le contenu est dans [data/catalog.gd](data/catalog.gd) : raretés, matéria
 
 ## Personnages et décors
 
-Les scènes sont en 3D, avec les modèles [KayKit](https://github.com/KayKit-Game-Assets) de Kay Lousberg (domaine public, CC0). Le reste du jeu est en 2D : chaque scène 3D est affichée comme une image ([scripts/stage3d.gd](scripts/stage3d.gd)), vue de haut sans perspective, si bien qu'un point de l'écran correspond à un point du sol.
+Les scènes sont en 3D, avec les modèles gratuits de [Quaternius](https://quaternius.com) (domaine public, CC0). Le reste du jeu est en 2D : chaque scène 3D est affichée comme une image ([scripts/stage3d.gd](scripts/stage3d.gd)) par une caméra fixe, si bien qu'un point de l'écran correspond à un point du sol.
 
 | Fichier | Rôle |
 |---|---|
-| `data/models.gd` | Quel modèle, quelles couleurs et quelle arme pour chaque personnage ; les armes en 3D |
-| `scripts/actor.gd` | Un personnage animé (repos, attaque, parade, chute) |
+| `data/models.gd` | Quelle tenue, quelles couleurs, quelle coiffure et quelle arme pour chaque personnage ; les armes en 3D |
+| `scripts/actor.gd` | Un personnage animé (repos, attaque, coup reçu, chute) |
 | `scripts/scenery.gd` | Les décors de la forge et des quatre zones |
-| `tools/build_kaykit.py` | Copie les modèles utiles et repeint les couleurs des personnages (`SKINS`) |
+| `tools/build_quaternius.py` | Copie les modèles utiles et réduit leurs textures |
 
-Chaque personnage est un des sept modèles du pack, repeint : la texture d'un modèle est une grille de 32 pastilles de couleur, et `SKINS` dit lesquelles changer (la peau en vert pour un orc, les cheveux en brun pour Grid). Après une modification :
+Le pack gratuit de tenues n'en contient que deux, le paysan et le rôdeur, pour homme et pour femme. Tous les personnages en sont des variantes : couleurs, coiffure, capuche, taille, arme (`CHARACTERS` dans `data/models.gd`). La tenue de paysan n'a pas de tête : elle est découpée dans le personnage de base.
+
+Les packs sont lus dans `tools/.quaternius_cache` (non versionné), un dossier par pack ; la liste est en tête de `tools/build_quaternius.py`. On les trouve sur quaternius.com et itch.io, et des copies en glTF existent sur GitHub (Mesh2Motion/mesh2motion-assets, kirbycope/godot-3d-player-controller-v2, walterpalladino/godot-quaternius-ultimate-stylized-nature, trebeljahr/quaternius-showcase). Après une modification :
 
 ```sh
-python3 tools/build_kaykit.py                                      # refait assets/kaykit
+python3 tools/build_quaternius.py                                  # refait assets/quaternius
+godot --headless --path . res://tools/gallery/grounds.tscn -- --test   # refait les textures de sol
 godot --path . res://tools/gallery/icons.tscn -- --test            # refait les images d'armes des menus
 godot --path . res://tools/gallery/gallery.tscn -- --test --show=characters   # planche de contrôle
 ```
 
-Il faut Python avec Pillow, et `git`. Un nouvel ennemi se déclare dans `ENEMIES` de `data/catalog.gd` et, sous le même nom, dans `CHARACTERS` de `data/models.gd`.
+Un nouvel ennemi se déclare dans `ENEMIES` de `data/catalog.gd` et, sous le même nom, dans `CHARACTERS` de `data/models.gd`.
 
-Les anciennes images en pixel art (`assets/lpc`, `assets/weapons`) ne sont plus affichées par le jeu, sauf l'icône.
+Les anciens visuels (`assets/lpc`, `assets/weapons`, `assets/kaykit`) ne sont plus affichés par le jeu, sauf l'icône.
 
 ## Lancer et vérifier
 

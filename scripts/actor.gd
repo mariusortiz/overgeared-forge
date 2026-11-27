@@ -8,7 +8,10 @@ extends Node2D
 ## From this node down to the ground under the character's feet.
 const FEET := Vector2(0, 52)
 ## Characters are turned a little towards the player.
-const TURN := deg_to_rad(62.0)
+const TURN := deg_to_rad(58.0)
+## How a weapon sits in a closed hand.
+const GRIP_TURN := Vector3(90, 0, 0)
+const GRIP_AT := Vector3(0, 0.09, 0.03)
 
 var facing_left := false
 var model: Node3D
@@ -18,8 +21,8 @@ var _player: AnimationPlayer
 var _skeleton: Skeleton3D
 var _hands := {}
 var _size := 1.0
-var _attack := "Unarmed_Melee_Attack_Punch_A"
-var _idle := "Idle"
+var _attack := "Punch_Cross"
+var _idle := "Sword_Idle"
 var _fallen := false
 
 
@@ -35,9 +38,7 @@ static func make(stage: Stage3D, character: String, left: bool, zoom: float) -> 
 	stage.world.add_child(actor.model)
 	actor._player = actor.model.find_child("AnimationPlayer", true, false)
 	actor._skeleton = actor.model.find_child("Skeleton3D", true, false)
-	for name in ["Idle", "2H_Melee_Idle"]:
-		actor._player.get_animation(name).loop_mode = Animation.LOOP_LINEAR
-	actor._player.play("Idle")
+	actor._player.play("Sword_Idle")
 	# Not everybody breathes in step.
 	actor._player.seek(randf() * 1.0)
 	if info.has("weapon"):
@@ -50,10 +51,12 @@ static func make_hero(stage: Stage3D, left: bool, zoom: float) -> Actor:
 	var armors := Save.equipped_items("armor")
 	var hero := make(stage, "grid" if armors.is_empty() else "grid_armor", left, zoom)
 	if not armors.is_empty():
-		Models.dress(hero.model, armors[0].material, armors[0].rarity,
-			["Knight_Body", "Knight_ArmLeft", "Knight_ArmRight", "Knight_LegLeft", "Knight_LegRight"])
+		Models.dress(hero.model, armors[0].material, armors[0].rarity, Models.CHARACTERS.grid_armor.armor)
 	for shield in Save.equipped_items("shield"):
-		hero._put("handslot.l", [Models.weapon("shield", shield.material, shield.rarity)])
+		var worn := Models.weapon("shield", shield.material, shield.rarity)
+		worn.rotation_degrees = Vector3(0, 90, 90)
+		worn.position = Vector3(-0.06, 0.02, 0)
+		hero._put("lowerarm_l", [worn])
 	return hero
 
 
@@ -61,10 +64,10 @@ static func make_hero(stage: Stage3D, left: bool, zoom: float) -> Actor:
 func hold(weapon: String, material := "", rarity := 0) -> void:
 	var info: Dictionary = Models.WEAPONS[weapon]
 	_attack = info.attack
-	_idle = info.get("idle", "Idle")
-	_put("handslot.r", [Models.weapon(weapon, material, rarity)])
-	if not _fallen and _player.current_animation in ["Idle", "2H_Melee_Idle"]:
-		_player.play(_idle, 0.2)
+	var held := Models.weapon(weapon, material, rarity)
+	held.rotation_degrees = GRIP_TURN
+	held.position = GRIP_AT
+	_put("hand_r", [held])
 
 
 ## Shows the other weapons on the back: a list of items of the save.
@@ -72,11 +75,11 @@ func carry(items: Array) -> void:
 	var nodes := []
 	for index in items.size():
 		var weapon := Models.weapon(items[index].plan, items[index].material, items[index].rarity)
-		weapon.position = Vector3(0.12 - index * 0.24, -0.35, -0.32)
+		weapon.position = Vector3(0.1 - index * 0.2, -0.25, -0.16)
 		weapon.rotation_degrees = Vector3(0, 90, 160 + index * 40)
-		weapon.scale = Vector3.ONE * 0.85
+		weapon.scale *= 0.85
 		nodes.append(weapon)
-	_put("chest", nodes)
+	_put("spine_03", nodes)
 
 
 func attack() -> void:
@@ -84,22 +87,22 @@ func attack() -> void:
 
 
 func hurt() -> void:
-	_play("Hit_A")
+	_play("Hit_Chest")
 
 
 func block() -> void:
-	_play("Block_Hit")
+	_play("Hit_Head")
 
 
 func cheer() -> void:
-	_play("Cheer")
+	_play("Interact")
 
 
 func fall() -> void:
 	if _fallen:
 		return
 	_fallen = true
-	_player.play("Death_A", 0.1)
+	_player.play("Death01", 0.1)
 
 
 func _play(animation: String) -> void:

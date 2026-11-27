@@ -12,7 +12,7 @@ const BARREL := Vector2(320, 168)
 const WEAPON_ZOOM := 3.0
 ## The item floats this far above the ground point under it.
 const DROP := Vector2(0, 32)
-const HERO_AT := Vector2(256, 132)
+const HERO_AT := Vector2(238, 126)
 const BRICK := Color("8f5240")
 const IRON := Color("3d4049")
 
@@ -33,7 +33,7 @@ var _shake := 0.0
 
 
 func _ready() -> void:
-	_stage = Stage3D.make(Vector2(WIDTH, HEIGHT))
+	_stage = Stage3D.make(Vector2(WIDTH, HEIGHT), Vector3(0, 3.0, 8.4), 17.0, 30.0)
 	add_child(_stage)
 	Scenery.build(_stage, "forge")
 	_build_furniture()
@@ -74,7 +74,8 @@ func _ready() -> void:
 ## The furnace, the anvil and the barrel, each under the point where the item goes.
 func _build_furniture() -> void:
 	var furnace := Node3D.new()
-	furnace.position = _stage.ground(FURNACE + Vector2(30, -14) + DROP) + Vector3(-0.1, 0, -0.95)
+	furnace.position = _stage.ground(FURNACE + Vector2(30, -14) + DROP) + Vector3(-0.1, 0, -0.7)
+	furnace.scale = Vector3.ONE * 0.7
 	_stage.world.add_child(furnace)
 	Models._part(furnace, Models._block(Vector3(2.1, 1.7, 1.4)), BRICK, Vector3(0, 0.85, 0))
 	Models._part(furnace, Models._block(Vector3(2.3, 0.2, 1.6)), BRICK.darkened(0.25), Vector3(0, 1.75, 0))
@@ -93,6 +94,7 @@ func _build_furniture() -> void:
 
 	var anvil := Node3D.new()
 	anvil.position = _stage.ground(ANVIL + Vector2(0, -34) + DROP)
+	anvil.scale = Vector3.ONE * 0.75
 	_stage.world.add_child(anvil)
 	Models._part(anvil, Models._block(Vector3(0.9, 0.5, 0.9)), Color("6b4a35"), Vector3(0, 0.25, 0))
 	Models._part(anvil, Models._block(Vector3(0.7, 0.14, 0.5)), IRON, Vector3(0, 0.57, 0))
@@ -101,9 +103,11 @@ func _build_furniture() -> void:
 	Models._part(anvil, Models._spike(0.14, 0.45), IRON.lightened(0.15), Vector3(-0.7, 0.84, 0), Vector3(0, 0, 90))
 
 	var at := _stage.ground(BARREL + Vector2(0, -40) + DROP)
-	var barrel := Scenery.prop(_stage, "barrel_large", at, 0.0, 0.62)
-	barrel.reparent(_stage.world)
-	var water := Models._part(_stage.world, Models._rod(0.4, 0.04), Color("4aa3d8"), at + Vector3(0, 0.84, 0))
+	var barrel := Models.model("modular_dungeon_1/Barrel.glb")
+	barrel.position = at
+	barrel.scale *= 0.9
+	_stage.world.add_child(barrel)
+	var water := Models._part(_stage.world, Models._rod(0.3, 0.04), Color("4aa3d8"), at + Vector3(0, 0.78, 0))
 	(water.mesh as CylinderMesh).radial_segments = 12
 
 
@@ -121,9 +125,9 @@ func _dress() -> void:
 	var weapons := Save.equipped_items("weapon")
 	for index in weapons.size():
 		var trophy := Models.weapon(weapons[index].plan, weapons[index].material, weapons[index].rarity)
-		trophy.position = _stage.at_depth(Vector2(176 + index * 40, 62), -0.95)
+		trophy.position = _stage.at_depth(Vector2(176 + index * 40, 62), -2.35)
 		trophy.rotation_degrees = Vector3(0, 0, 180)
-		trophy.scale = Vector3.ONE * 0.8
+		trophy.scale *= 0.9
 		_trophies.add_child(trophy)
 
 

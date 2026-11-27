@@ -2,18 +2,26 @@
 
 Les licences ne sont pas toutes les mêmes : les modèles 3D et les sons sont dans le domaine public (CC0), la police est sous OFL, et les images LPC demandent de citer leurs auteurs et de garder la même licence.
 
-## Modèles 3D (KayKit)
+## Modèles 3D (Quaternius)
 
-Tout ce qui est en 3D dans le jeu vient des packs de [Kay Lousberg](https://www.kaylousberg.com) (KayKit), sous licence CC0 :
+Tout ce qui est en 3D dans le jeu vient des packs gratuits de [Quaternius](https://quaternius.com), sous licence CC0 :
 
 | Contenu | Pack | Emplacement |
 |---|---|---|
-| Grid et les ennemis humains | [Adventurers Character Pack](https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0) | `assets/kaykit/characters/`, `assets/kaykit/weapons/` |
-| Squelettes | [Skeletons Character Pack](https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Skeletons-1.0) | `assets/kaykit/characters/`, `assets/kaykit/weapons/` |
-| Forge, temple, profondeurs | [Dungeon Remastered](https://github.com/KayKit-Game-Assets/KayKit-Dungeon-Remastered-1.0) | `assets/kaykit/props/` |
-| Canyon, terres d'Ashur | [Medieval Hexagon Pack](https://github.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0) | `assets/kaykit/props/` |
+| Tenues des personnages | Modular Character Outfits - Fantasy (version gratuite) | `assets/quaternius/characters/` |
+| Têtes et coiffures | Universal Base Characters (version gratuite) | `assets/quaternius/base/`, `assets/quaternius/hair/` |
+| Animations | Universal Animation Library | `assets/quaternius/animations/` |
+| Armes, bouclier, coffre | Fantasy Props MegaKit (version gratuite) | `assets/quaternius/props/` |
+| Arbres, buissons, fleurs, rochers | Ultimate Stylized Nature | `assets/quaternius/nature/` |
+| Temple, forge | Modular Dungeon, Updated Modular Dungeon | `assets/quaternius/modular_dungeon_*/` |
+| Village | Medieval Village | `assets/quaternius/medieval_village_pack/` |
+| Plastron, cristaux, lingots | Ultimate RPG Items | `assets/quaternius/rpg_items_pack/` |
 
-Les couleurs des personnages (`assets/kaykit/skins/`) sont repeintes par `tools/build_kaykit.py`. La lance, le marteau, la faux, le plastron, le fourneau et l'enclume sont des formes simples construites par le jeu. Les images d'armes des menus (`assets/icons/`) sont des rendus de ces modèles.
+Les textures ont été réduites par `tools/build_quaternius.py`. La lance, la faux, le bâton, le fourneau et l'enclume sont des formes simples construites par le jeu, et les textures de sol (`assets/quaternius/ground/`) sont dessinées par `tools/gallery/grounds.gd`. Les images d'armes des menus (`assets/icons/`) sont des rendus des modèles.
+
+## Anciens modèles 3D (KayKit)
+
+Les modèles de [Kay Lousberg](https://www.kaylousberg.com) (CC0) dans `assets/kaykit/` ne sont plus affichés par le jeu.
 
 ## Anciennes images en pixel art (LPC)
 
