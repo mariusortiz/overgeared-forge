@@ -93,8 +93,14 @@ static func character(id: String) -> Node3D:
 			found.visible = false
 	var female: bool = String(info.outfit).begins_with("Female")
 	if info.get("head", false):
-		for piece in _head(female):
-			_attach(skeleton, piece.duplicate())
+		for part in _head(female):
+			var piece := MeshInstance3D.new()
+			piece.name = part.name
+			piece.mesh = part.mesh
+			piece.skin = part.skin
+			if part.has("tint"):
+				_tint_surface(piece, 0, part.tint)
+			_attach(skeleton, piece)
 	if info.has("hair"):
 		var hair: MeshInstance3D = _borrow("hair/%s.gltf" % info.hair, [])[0]
 		_tint_surface(hair, 0, info.hair_color)
@@ -152,26 +158,21 @@ static func _tint_surface(mesh: MeshInstance3D, surface: int, color: Color) -> v
 	mesh.set_surface_override_material(surface, _painted[key])
 
 
-## The head, eyes and eyebrows of the base character. Its body is one piece: the
-## head is cut out of it (the triangles that follow the head and neck bones).
+## The head, eyes and eyebrows of the base character, as {name, mesh, skin, tint}.
+## Its body is one piece: the head is cut out of it (the triangles that follow the head and neck bones).
 static func _head(female: bool) -> Array:
 	if not _heads.has(female):
 		var pieces := []
 		var source: Node = (load(DIR + "base/Superhero_%s_FullBody.gltf" % ("Female" if female else "Male")) as PackedScene).instantiate()
 		for mesh: MeshInstance3D in source.find_children("*", "MeshInstance3D", true, false):
-			var piece := MeshInstance3D.new()
-			piece.name = "Head_" + mesh.name
-			piece.skin = mesh.skin
+			var part := {"name": "Head_" + mesh.name, "mesh": mesh.mesh, "skin": mesh.skin}
 			var kind := String(mesh.mesh.surface_get_material(0).resource_name)
 			if kind.begins_with("MI_Superhero"):
-				piece.mesh = _head_only(mesh)
+				part.mesh = _head_only(mesh)
 			elif kind.begins_with("MI_Hair"):
 				# Eyebrows: dark, whatever the hair.
-				piece.mesh = mesh.mesh
-				_tint_surface(piece, 0, Color("2a1c14"))
-			else:
-				piece.mesh = mesh.mesh
-			pieces.append(piece)
+				part["tint"] = Color("2a1c14")
+			pieces.append(part)
 		source.free()
 		_heads[female] = pieces
 	return _heads[female]
